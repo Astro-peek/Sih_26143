@@ -1,0 +1,71 @@
+[
+  {
+    "category": "Oil",
+    "image": "demo_data/Images/Oil/00023.tif",
+    "truth": "demo_data/Mask/Oil/00023_segmentation.tif",
+    "image_sha256": "41dcd8dc1f3853bfa5cf25ce84879224e4e090aefb080bb96c5ed22a054768f6",
+    "truth_sha256": "ec9718e03135cc1a4d76821af78282900bbf72f237f4cfd72a752374868c2d92",
+    "detected": true,
+    "total_area_km2": 29.9288,
+    "pixel_metrics": {
+      "tp": 277535,
+      "fp": 45790,
+      "fn": 3563,
+      "tn": 3867416,
+      "accuracy": 0.9882333278656006,
+      "precision": 0.8583777932420938,
+      "recall": 0.9873247052629333,
+      "specificity": 0.9882985971093778,
+      "iou": 0.8490216832676636,
+      "dice": 0.9183469192932764
+    },
+    "seconds": 1.061,
+    "panel": "Oil_00023.png"
+  },
+  {
+    "category": "Lookalike",
+    "image": "demo_data/Images/Lookalike/00000.tif",
+    "truth": "demo_data/Mask/Lookalike/00000_segmentation.tif",
+    "image_sha256": "50f6c42768d449038e506d94b6a7986053148dabdb01f824621d2e24e50bf2f7",
+    "truth_sha256": "f1aa0ad4cbbd93669d577a8d940448dcd5d4aacec3aa613c78b891af8752da34",
+    "detected": false,
+    "total_area_km2": 0.0,
+    "pixel_metrics": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 4194304,
+      "accuracy": 1.0,
+      "precision": null,
+      "recall": null,
+      "specificity": 1.0,
+      "iou": null,
+      "dice": null
+    },
+    "seconds": 0.845,
+    "panel": "Lookalike_00000.png"
+  },
+  {
+    "category": "No oil",
+    "image": "demo_data/Images/No oil/00000.tif",
+    "truth": "demo_data/Mask/No oil/00000_segmentation.tif",
+    "image_sha256": "c4ca2c9e8f9c268fdfd294c50824b9d8f6ef5f277fa20cc2d08eed3597f0aa8b",
+    "truth_sha256": "f1aa0ad4cbbd93669d577a8d940448dcd5d4aacec3aa613c78b891af8752da34",
+    "detected": false,
+    "total_area_km2": 0.0,
+    "pixel_metrics": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 4194304,
+      "accuracy": 1.0,
+      "precision": null,
+      "recall": null,
+      "specificity": 1.0,
+      "iou": null,
+      "dice": null
+    },
+    "seconds": 0.783,
+    "panel": "No_oil_00000.png"
+  }
+]

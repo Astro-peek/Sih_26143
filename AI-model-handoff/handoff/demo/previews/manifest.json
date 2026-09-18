@@ -1,0 +1,17 @@
+[
+  {
+    "category": "Oil",
+    "image": "demo_data/Images/Oil/00023.tif",
+    "truth": "demo_data/Mask/Oil/00023_segmentation.tif"
+  },
+  {
+    "category": "Lookalike",
+    "image": "demo_data/Images/Lookalike/00000.tif",
+    "truth": "demo_data/Mask/Lookalike/00000_segmentation.tif"
+  },
+  {
+    "category": "No oil",
+    "image": "demo_data/Images/No oil/00000.tif",
+    "truth": "demo_data/Mask/No oil/00000_segmentation.tif"
+  }
+]

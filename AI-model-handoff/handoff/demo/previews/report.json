@@ -1,0 +1,90 @@
+{
+  "created_utc": "2026-09-18T13:26:37.446442+00:00",
+  "checkpoint": "runs/spill_unet_tiles.pt",
+  "checkpoint_sha256": "b9a99e7b7b3c948cc729b283b712df28bc71c9e79e4b8916acb3903238644394",
+  "device": "cuda",
+  "sample_seed": 20260911,
+  "n_scenes": 3,
+  "threshold": 0.5,
+  "min_area_km2": 0.05,
+  "channels": "dual",
+  "scene_metrics": {
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "tn": 2,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "iou": 1.0,
+    "dice": 1.0
+  },
+  "pixel_metrics": {
+    "tp": 277535,
+    "fp": 45790,
+    "fn": 3563,
+    "tn": 12256024,
+    "accuracy": 0.9960777759552002,
+    "precision": 0.8583777932420938,
+    "recall": 0.9873247052629333,
+    "specificity": 0.9962777847234562,
+    "iou": 0.8490216832676636,
+    "dice": 0.9183469192932764
+  },
+  "by_class": {
+    "Oil": {
+      "scenes": 1,
+      "flagged": 1,
+      "pixel_metrics": {
+        "tp": 277535,
+        "fp": 45790,
+        "fn": 3563,
+        "tn": 3867416,
+        "accuracy": 0.9882333278656006,
+        "precision": 0.8583777932420938,
+        "recall": 0.9873247052629333,
+        "specificity": 0.9882985971093778,
+        "iou": 0.8490216832676636,
+        "dice": 0.9183469192932764
+      },
+      "flag_rate": 1.0
+    },
+    "Lookalike": {
+      "scenes": 1,
+      "flagged": 0,
+      "pixel_metrics": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 4194304,
+        "accuracy": 1.0,
+        "precision": null,
+        "recall": null,
+        "specificity": 1.0,
+        "iou": null,
+        "dice": null
+      },
+      "flag_rate": 0.0
+    },
+    "No oil": {
+      "scenes": 1,
+      "flagged": 0,
+      "pixel_metrics": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 4194304,
+        "accuracy": 1.0,
+        "precision": null,
+        "recall": null,
+        "specificity": 1.0,
+        "iou": null,
+        "dice": null
+      },
+      "flag_rate": 0.0
+    }
+  },
+  "protocol": "Part III test imagery; fixed threshold, no fitting or calibration on test samples. Scene detection uses area filtering; pixel metrics use the raw thresholded mask. Empty positive denominators are null.",
+  "scope": "SAR detection only. Does not measure real-world drift or vessel attribution accuracy."
+}
