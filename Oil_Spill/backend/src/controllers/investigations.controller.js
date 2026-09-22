@@ -5,11 +5,8 @@ const { generateAndUploadDossier } = require('../services/dossier');
 exports.create = async (req, res, next) => {
   try {
     const { lat, lon } = req.body;
-    const code = `OT-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.floor(Math.random()*1000).toString().padStart(3,'0')}`;
+    const code = `OT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
     const payload = { lat, lon, code };
-
-
-
 
     const { data, error } = await supabase
       .from('investigations')
@@ -123,12 +120,12 @@ exports.analyze = async (req, res, next) => {
 
 exports.exportDossier = async (req, res, next) => {
   try {
-     const { id } = req.params;
-     const { data: inv } = await supabase.from('investigations').select().eq('id', id).single();
+    const { id } = req.params;
+    const { data: inv } = await supabase.from('investigations').select().eq('id', id).single();
 
-     const suspects = [{ name_snapshot: "Candidate A", mmsi: 123, score: 90 }];
+    const suspects = [{ name_snapshot: "Candidate A", mmsi: 123, score: 90 }];
 
-     const docResult = await generateAndUploadDossier(inv, { suspects });
-     res.json({ success: true, data: docResult });
-  } catch(err) { next(err); }
+    const docResult = await generateAndUploadDossier(inv, { suspects });
+    res.json({ success: true, data: docResult });
+  } catch (err) { next(err); }
 };
