@@ -1,5 +1,5 @@
 const CONFIG = {
-    API_BASE_URL: 'http://localhost:4000/api/v1',
+    API_BASE_URL: 'https://sih-26143.onrender.com',
     ENDPOINTS: {
         UPLOAD: '/api/detection/upload',
         DETECT: '/api/detection/segment',
