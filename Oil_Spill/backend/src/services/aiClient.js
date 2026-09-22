@@ -21,8 +21,8 @@ async function runFullPipeline(lat, lon, env, imagePath) {
   if (env) {
     args.push("--env", JSON.stringify(env));
   }
-  if (imagePath && imagePath !== "fake-uuid-not-used-much" && !imagePath.match(/^00000000/)) {
-    // If not a fake fallback string, assume it's a real path
+  if (imagePath && (imagePath.includes("/") || imagePath.includes("\\") || imagePath.includes("."))) {
+    // If it looks like a real path with slashes or a file extension, use it
     args.push("--image", imagePath);
   }
 
@@ -31,7 +31,13 @@ async function runFullPipeline(lat, lon, env, imagePath) {
       cwd: AI_DIR,
       timeout: 300_000,
       maxBuffer: 10 * 1024 * 1024,
-      env: { ...process.env, OILSPILL_DEVICE: "cpu" },
+      env: { 
+        ...process.env, 
+        OILSPILL_DEVICE: "cpu",
+        OMP_NUM_THREADS: "1",
+        MKL_NUM_THREADS: "1",
+        OPENBLAS_NUM_THREADS: "1"
+      },
     });
 
     const webJsonPath = path.join(out, "web.json");
