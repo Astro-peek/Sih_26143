@@ -3,56 +3,44 @@ const { readFile, rm } = require('node:fs/promises');
 const { promisify } = require('node:util');
 const path = require('node:path');
 
-// Target the handoff folder. Adjust based on where this backend is located.
-// backend is at \ASTRO\Sih_26143\Oil_Spill\backend
-// handoff is at \ASTRO\Sih_26143\AI-model-handoff\handoff
-const AI_DIR = path.resolve(__dirname, '../../../../AI-model-handoff/handoff');
-const PY = 'python';
+// Target the new Hugging Face Space API
+const HF_SPACE_URL = "https://astrocode01-ocean-trace-ai.hf.space/api/predict";
 
 async function runFullPipeline(lat, lon, env, imagePath) {
-  const out = path.join(process.cwd(), `tmp-oceantrace-${Date.now()}`);
-  
-  const args = [
-    "-m", "oilspill.web_bridge", 
-    "--out", out, 
-    "--lat", String(lat), 
-    "--lon", String(lon)
-  ];
-  if (env) {
-    args.push("--env", JSON.stringify(env));
-  }
-  if (imagePath && (imagePath.includes("/") || imagePath.includes("\\") || imagePath.includes("."))) {
-    // If it looks like a real path with slashes or a file extension, use it
-    args.push("--image", imagePath);
-  }
-
   try {
-    await promisify(execFile)(PY, args, {
-      cwd: AI_DIR,
-      timeout: 300_000,
-      maxBuffer: 10 * 1024 * 1024,
-      env: { 
-        ...process.env, 
-        OILSPILL_DEVICE: "cpu",
-        OMP_NUM_THREADS: "1",
-        MKL_NUM_THREADS: "1",
-        OPENBLAS_NUM_THREADS: "1"
-      },
+    const payload = {
+      data: [
+        parseFloat(lat),
+        parseFloat(lon),
+        JSON.stringify(env)
+      ]
+    };
+
+    // The fetch API is globally available in modern Node.js
+    const res = await fetch(HF_SPACE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
 
-    const webJsonPath = path.join(out, "web.json");
-    const data = JSON.parse(await readFile(webJsonPath, "utf8"));
+    if (!res.ok) {
+      throw new Error(`Hugging Face API Error: ${res.status} ${res.statusText}`);
+    }
+
+    const hfData = await res.json();
+    
+    // Gradio wraps the return value in a "data" array
+    const rawResultJson = hfData.data[0];
+    const data = JSON.parse(rawResultJson);
+    
+    if (data.error) {
+       throw new Error(`Hugging Face Python Error: ${data.error}`);
+    }
+    
     return data;
   } catch (error) {
-    console.error('AI pipeline error:', error);
-    const rawError = error.stderr ? `Python Core Crash:\n${error.stderr}` : `Node Execution Failed:\n${error.message}`;
-    throw new Error(rawError);
-  } finally {
-    try {
-      await rm(out, { recursive: true, force: true });
-    } catch (cleanupError) {
-      console.warn('Failed to cleanup temp directory:', out, cleanupError);
-    }
+    console.error('HF Pipeline error:', error);
+    throw new Error('AI pipeline failed to run on Hugging Face: ' + (error.message || 'Unknown error'));
   }
 }
 
