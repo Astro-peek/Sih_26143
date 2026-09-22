@@ -44,14 +44,9 @@ async function runFullPipeline(lat, lon, env, imagePath) {
     const data = JSON.parse(await readFile(webJsonPath, "utf8"));
     return data;
   } catch (error) {
-    if (error.stderr) {
-      const match = error.stderr.match(/(ValueError|Exception|Error|RunTimeError):\s*(.*)/i);
-      if (match) {
-        throw new Error("AI Model Rejected Image: " + match[2].trim());
-      }
-    }
     console.error('AI pipeline error:', error);
-    throw new Error('AI pipeline failed to run: ' + (error.message || 'Unknown error'));
+    const rawError = error.stderr ? `Python Core Crash:\n${error.stderr}` : `Node Execution Failed:\n${error.message}`;
+    throw new Error(rawError);
   } finally {
     try {
       await rm(out, { recursive: true, force: true });
