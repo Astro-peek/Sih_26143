@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const investigationsRoutes = require('./routes/investigations.routes');
 
 const app = express();
+app.set('trust proxy', 1);
 
 app.use(cors({ origin: env.CORS_ORIGIN }));
 app.use(express.json());
