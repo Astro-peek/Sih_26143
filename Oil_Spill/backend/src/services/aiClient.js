@@ -14,8 +14,8 @@ async function runFullPipeline(lat, lon, env, imagePath) {
     // Connect tightly to the Gradio Space
     const app = await Client.connect(HF_SPACE);
     
-    // Issue the prediction to the default "/predict" endpoint
-    const result = await app.predict("/predict", [
+    // Issue the prediction to the exact endpoint Hugging Face exposed
+    const result = await app.predict("/run_pipeline", [
       parseFloat(lat), // Latitude
       parseFloat(lon), // Longitude
       JSON.stringify(env) // Environment JSON
