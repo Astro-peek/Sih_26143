@@ -121,11 +121,15 @@ exports.analyze = async (req, res, next) => {
 exports.exportDossier = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { data: inv } = await supabase.from('investigations').select().eq('id', id).single();
+    const { data: inv } = await supabase.from('investigations').select('*').eq('id', id).single();
 
-    const suspects = [{ name_snapshot: "Candidate A", mmsi: 123, score: 90 }];
+    if (req.body) {
+      inv.detections = req.body.detection ? [req.body.detection] : [];
+      inv.investigation_suspects = req.body.vessels || [];
+      inv.evidence_events = req.body.evidenceChain || [];
+    }
 
-    const docResult = await generateAndUploadDossier(inv, { suspects });
+    const docResult = await generateAndUploadDossier(inv);
     res.json({ success: true, data: docResult });
   } catch (err) { next(err); }
 };

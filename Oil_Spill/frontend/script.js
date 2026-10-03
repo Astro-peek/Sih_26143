@@ -1333,7 +1333,17 @@ async function exportDossierReport() {
             DOM.btnExportTop.disabled = true;
         }
 
-        const res = await fetch(`${CONFIG.API_BASE_URL}/investigations/${appState.dbId}/dossier/export`, { method: 'POST' });
+        const payload = {
+            detection: appState.detection,
+            drift: appState.drift,
+            vessels: appState.vessels,
+            evidenceChain: appState.evidenceChain
+        };
+        const res = await fetch(`${CONFIG.API_BASE_URL}/investigations/${appState.dbId}/dossier/export`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
         const json = await res.json();
 
         if (json.success && json.data.downloadUrl) {
