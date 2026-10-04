@@ -317,9 +317,9 @@ function initLeafletMap() {
         });
 
 
-        // Use Esri Dark Gray tile — completely free, no API key needed
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        // Use Stadia Maps dark tile — free, no API key needed
+        L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
             maxZoom: 20
         }).addTo(map);
 
@@ -1333,17 +1333,7 @@ async function exportDossierReport() {
             DOM.btnExportTop.disabled = true;
         }
 
-        const payload = {
-            detection: appState.detection,
-            drift: appState.drift,
-            vessels: appState.vessels,
-            evidenceChain: appState.evidenceChain
-        };
-        const res = await fetch(`${CONFIG.API_BASE_URL}/investigations/${appState.dbId}/dossier/export`, { 
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const res = await fetch(`${CONFIG.API_BASE_URL}/investigations/${appState.dbId}/dossier/export`, { method: 'POST' });
         const json = await res.json();
 
         if (json.success && json.data.downloadUrl) {
