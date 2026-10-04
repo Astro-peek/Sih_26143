@@ -107,98 +107,95 @@ let mapLayers = {
     scrubberTrackBeacon: null
 };
 
-const DOM = {
-
-    navbar: document.getElementById('navbar'),
-    mobileBtn: document.getElementById('mobileMenuBtn'),
-    navLinks: document.getElementById('navLinks'),
-    launchBtns: document.querySelectorAll('#navLaunchBtn, #heroLaunchBtn'),
-    btnNewId: document.getElementById('btnNewId'),
-    navInvestigationId: document.getElementById('navInvestigationId'),
-    heroIncidentId: document.getElementById('heroIncidentId'),
-    dossierId: document.getElementById('dossierId'),
-    btnResetAll: document.getElementById('btnResetAll'),
-    btnExportTop: document.getElementById('btnExportTop'),
-
-
-    inputLat: document.getElementById('inputLat'),
-    inputLon: document.getElementById('inputLon'),
-    btnSetLocation: document.getElementById('btnSetLocation'),
-    btnCenterMap: document.getElementById('btnCenterMap'),
-    loadDemoImgBtn: document.getElementById('loadDemoImgBtn'),
-
-
-    mapResetBtn: document.getElementById('mapResetBtn'),
-    mapFitBoundsBtn: document.getElementById('mapFitBoundsBtn'),
-    mapCenterSpillBtn: document.getElementById('mapCenterSpillBtn'),
-    legendToggleBtn: document.getElementById('legendToggleBtn'),
-    legendBody: document.getElementById('legendBody'),
-    legendChevron: document.getElementById('legendChevron'),
-    hudLatLonVal: document.getElementById('hudLatLonVal'),
-    hudWindArrow: document.getElementById('hudWindArrow'),
-    hudWindVal: document.getElementById('hudWindVal'),
-    hudCurrentArrow: document.getElementById('hudCurrentArrow'),
-    hudCurrentVal: document.getElementById('hudCurrentVal'),
-    scrubberPhaseBadge: document.getElementById('scrubberPhaseBadge'),
-    timeSlider: document.getElementById('timeSlider'),
-    scrubberTimeDisplay: document.getElementById('scrubberTimeDisplay'),
-
-
-    layerSpill: document.getElementById('layerSpill'),
-    layerOrigin: document.getElementById('layerOrigin'),
-    layerBackDrift: document.getElementById('layerBackDrift'),
-    layerForwardDrift: document.getElementById('layerForwardDrift'),
-    layerCone: document.getElementById('layerCone'),
-    layerVesselTracks: document.getElementById('layerVesselTracks'),
-    layerVessels: document.getElementById('layerVessels'),
-
-
-    uploadZone: document.getElementById('uploadZone'),
-    fileInput: document.getElementById('imageUpload'),
-    previewArea: document.getElementById('previewArea'),
-    imgPreview: document.getElementById('imgPreview'),
-    removeImgBtn: document.getElementById('removeImgBtn'),
-    fileName: document.getElementById('fileName'),
-    runBtn: document.getElementById('runDetectionBtn'),
-    pipeline: document.getElementById('processingPipeline'),
-    results: document.getElementById('detectionResults'),
-    lookAlikeWarning: document.getElementById('lookAlikeWarning'),
-
-
-    driftPanel: document.getElementById('drift'),
-    btnBackDrift: document.getElementById('btnBackDrift'),
-    btnForwardDrift: document.getElementById('btnForwardDrift'),
-    sliderWindSpeed: document.getElementById('sliderWindSpeed'),
-    sliderWindDir: document.getElementById('sliderWindDir'),
-    sliderCurrentSpeed: document.getElementById('sliderCurrentSpeed'),
-    sliderCurrentDir: document.getElementById('sliderCurrentDir'),
-    valWindSpeed: document.getElementById('valWindSpeed'),
-    valWindDir: document.getElementById('valWindDir'),
-    valCurrentSpeed: document.getElementById('valCurrentSpeed'),
-    valCurrentDir: document.getElementById('valCurrentDir'),
-    durationButtons: document.querySelectorAll('.btn-sm-toggle'),
-
-
-    vesselsPanel: document.getElementById('vessels'),
-    vesselTableBody: document.querySelector('#vesselTable tbody'),
-    vesselDetailEmpty: document.getElementById('vesselDetailEmpty'),
-    vesselDetailContent: document.getElementById('vesselDetailContent'),
-    sourceTypeFilter: document.getElementById('sourceTypeFilter'),
-    radiusSlider: document.getElementById('radiusSlider'),
-    timeShiftSlider: document.getElementById('timeShiftSlider'),
-    valRadius: document.getElementById('valRadius'),
-    valTimeShift: document.getElementById('valTimeShift'),
-    robustnessResult: document.getElementById('robustnessResult'),
-
-
-    evidenceTimeline: document.getElementById('evidenceTimeline'),
-    dossierPreview: document.getElementById('dossierPreview'),
-    exportBtn: document.getElementById('exportBtn')
-};
+const DOM = {};
 
 const PAGE = window.location.pathname.includes('evidence') ? 'evidence' : 'command';
 
+function initDOM() {
+    DOM.navbar = document.getElementById('navbar');
+    DOM.mobileBtn = document.getElementById('mobileMenuBtn');
+    DOM.navLinks = document.getElementById('navLinks');
+    DOM.launchBtns = document.querySelectorAll('#navLaunchBtn, #heroLaunchBtn');
+    DOM.btnNewId = document.getElementById('btnNewId');
+    DOM.navInvestigationId = document.getElementById('navInvestigationId');
+    DOM.heroIncidentId = document.getElementById('heroIncidentId');
+    DOM.dossierId = document.getElementById('dossierId');
+    DOM.btnResetAll = document.getElementById('btnResetAll');
+    DOM.btnExportTop = document.getElementById('btnExportTop');
+
+    DOM.inputLat = document.getElementById('inputLat');
+    DOM.inputLon = document.getElementById('inputLon');
+    DOM.btnSetLocation = document.getElementById('btnSetLocation');
+    DOM.btnCenterMap = document.getElementById('btnCenterMap');
+    DOM.loadDemoImgBtn = document.getElementById('loadDemoImgBtn');
+
+    DOM.mapResetBtn = document.getElementById('mapResetBtn');
+    DOM.mapFitBoundsBtn = document.getElementById('mapFitBoundsBtn');
+    DOM.mapCenterSpillBtn = document.getElementById('mapCenterSpillBtn');
+    DOM.legendToggleBtn = document.getElementById('legendToggleBtn');
+    DOM.legendBody = document.getElementById('legendBody');
+    DOM.legendChevron = document.getElementById('legendChevron');
+    DOM.hudLatLonVal = document.getElementById('hudLatLonVal');
+    DOM.hudWindArrow = document.getElementById('hudWindArrow');
+    DOM.hudWindVal = document.getElementById('hudWindVal');
+    DOM.hudCurrentArrow = document.getElementById('hudCurrentArrow');
+    DOM.hudCurrentVal = document.getElementById('hudCurrentVal');
+    DOM.scrubberPhaseBadge = document.getElementById('scrubberPhaseBadge');
+    DOM.timeSlider = document.getElementById('timeSlider');
+    DOM.scrubberTimeDisplay = document.getElementById('scrubberTimeDisplay');
+
+    DOM.layerSpill = document.getElementById('layerSpill');
+    DOM.layerOrigin = document.getElementById('layerOrigin');
+    DOM.layerBackDrift = document.getElementById('layerBackDrift');
+    DOM.layerForwardDrift = document.getElementById('layerForwardDrift');
+    DOM.layerCone = document.getElementById('layerCone');
+    DOM.layerVesselTracks = document.getElementById('layerVesselTracks');
+    DOM.layerVessels = document.getElementById('layerVessels');
+
+    DOM.uploadZone = document.getElementById('uploadZone');
+    DOM.fileInput = document.getElementById('imageUpload');
+    DOM.previewArea = document.getElementById('previewArea');
+    DOM.imgPreview = document.getElementById('imgPreview');
+    DOM.removeImgBtn = document.getElementById('removeImgBtn');
+    DOM.fileName = document.getElementById('fileName');
+    DOM.runBtn = document.getElementById('runDetectionBtn');
+    console.log('Run button found:', DOM.runBtn);
+    DOM.pipeline = document.getElementById('processingPipeline');
+    DOM.results = document.getElementById('detectionResults');
+    DOM.lookAlikeWarning = document.getElementById('lookAlikeWarning');
+
+    DOM.driftPanel = document.getElementById('drift');
+    DOM.btnBackDrift = document.getElementById('btnBackDrift');
+    DOM.btnForwardDrift = document.getElementById('btnForwardDrift');
+    DOM.sliderWindSpeed = document.getElementById('sliderWindSpeed');
+    DOM.sliderWindDir = document.getElementById('sliderWindDir');
+    DOM.sliderCurrentSpeed = document.getElementById('sliderCurrentSpeed');
+    DOM.sliderCurrentDir = document.getElementById('sliderCurrentDir');
+    DOM.valWindSpeed = document.getElementById('valWindSpeed');
+    DOM.valWindDir = document.getElementById('valWindDir');
+    DOM.valCurrentSpeed = document.getElementById('valCurrentSpeed');
+    DOM.valCurrentDir = document.getElementById('valCurrentDir');
+    DOM.durationButtons = document.querySelectorAll('.btn-sm-toggle');
+
+    DOM.vesselsPanel = document.getElementById('vessels');
+    DOM.vesselTableBody = document.querySelector('#vesselTable tbody');
+    DOM.vesselDetailEmpty = document.getElementById('vesselDetailEmpty');
+    DOM.vesselDetailContent = document.getElementById('vesselDetailContent');
+    DOM.sourceTypeFilter = document.getElementById('sourceTypeFilter');
+    DOM.radiusSlider = document.getElementById('radiusSlider');
+    DOM.timeShiftSlider = document.getElementById('timeShiftSlider');
+    DOM.valRadius = document.getElementById('valRadius');
+    DOM.valTimeShift = document.getElementById('valTimeShift');
+    DOM.robustnessResult = document.getElementById('robustnessResult');
+
+    DOM.evidenceTimeline = document.getElementById('evidenceTimeline');
+    DOM.dossierPreview = document.getElementById('dossierPreview');
+    DOM.exportBtn = document.getElementById('exportBtn');
+}
+
 document?.addEventListener('DOMContentLoaded', async () => {
+    initDOM();
+    
     const saved = localStorage.getItem('oceanTraceApp');
     if (saved) {
         try {
@@ -1533,9 +1530,20 @@ function resetUploadState() {
 }
 
 function initAnalysis() {
-    DOM.runBtn?.addEventListener('click', async () => {
-        if (appState.isProcessing) return;
+    if (!DOM.runBtn) {
+        console.error('Run button not found in DOM');
+        return;
+    }
+    
+    console.log('Attaching click listener to run button');
+    DOM.runBtn.addEventListener('click', async () => {
+        console.log('Run button clicked');
+        if (appState.isProcessing) {
+            console.log('Already processing, ignoring click');
+            return;
+        }
         if (DOM.previewArea?.classList.contains('hidden')) {
+            console.log('No image loaded, loading sample');
             loadSampleImage();
         }
 
