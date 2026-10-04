@@ -242,42 +242,17 @@ document?.addEventListener('DOMContentLoaded', async () => {
         generateNewInvestigationId().catch(e => console.warn('Background ID generation:', e));
     }
 
+    // Do NOT auto-restore analysisComplete state - user must run analysis fresh
+    // Only restore basic coordinates and investigation ID
     if (appState.analysisComplete) {
-        // Restore complete analysis state on page reload
-        if (DOM.runBtn) {
+        // Reset analysisComplete flag to force fresh analysis
+        appState.analysisComplete = false;
+        saveState();
+        
+        // Keep only the button text change if image exists
+        if (DOM.runBtn && appState.imagePreview) {
             DOM.runBtn.textContent = 'Re-Run AI Analysis';
-            DOM.runBtn.disabled = false;
         }
-        DOM.uploadZone?.classList.add('hidden');
-        DOM.previewArea?.classList.remove('hidden');
-        if (DOM.imgPreview && appState.imagePreview) DOM.imgPreview.src = appState.imagePreview;
-
-        DOM.pipeline?.classList.remove('hidden');
-        document.querySelectorAll('.pipeline-step').forEach(step => {
-            step.classList.remove('pending');
-            step.classList.add('done');
-            if (!step.textContent.includes('✓')) step.textContent += ' ✓';
-        });
-
-        DOM.results?.classList.remove('hidden');
-        DOM.driftPanel?.classList.remove('hidden');
-        DOM.vesselsPanel?.classList.remove('hidden');
-
-        if (appState.vessels.length === 0) {
-            generateVesselsAroundOrigin();
-        }
-        renderVesselsTable();
-        const currentSel = appState.vessels.find(v => v.id === appState.selectedVesselId) || appState.vessels[0];
-        if (currentSel) showVesselDetail(currentSel);
-
-        setTimeout(() => {
-            renderMapLayers();
-            updateUIElements();
-            renderEvidenceChain();
-            generateDossier();
-            if (DOM.exportBtn) DOM.exportBtn.disabled = false;
-            if (DOM.btnExportTop) DOM.btnExportTop.disabled = false;
-        }, 100);
     }
 });
 
