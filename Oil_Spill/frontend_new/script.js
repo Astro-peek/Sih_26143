@@ -85,26 +85,13 @@ let appState = {
 let map = null;
 let mapLayers = {
     investigationMarker: null,
-    spillGroup: null,
     spillPolygon: null,
-    spillSheenPolygon: null,
-    spillCentroidMarker: null,
-    originGroup: null,
     originCircle: null,
-    originInnerCircle: null,
-    originCentroidMarker: null,
-    backDriftGroup: null,
     backDriftPolyline: null,
-    backDriftWaypoints: [],
-    forwardDriftGroup: null,
     forwardDriftPolyline: null,
-    forwardDriftWaypoints: [],
-    forwardDriftDispersion: [],
     uncertaintyConePolygon: null,
     vesselTrackLines: [],
-    vesselMarkers: [],
-    satelliteEventMarkers: [],
-    scrubberTrackBeacon: null
+    vesselMarkers: []
 };
 
 const DOM = {
@@ -130,16 +117,6 @@ const DOM = {
 
     mapResetBtn: document.getElementById('mapResetBtn'),
     mapFitBoundsBtn: document.getElementById('mapFitBoundsBtn'),
-    mapCenterSpillBtn: document.getElementById('mapCenterSpillBtn'),
-    legendToggleBtn: document.getElementById('legendToggleBtn'),
-    legendBody: document.getElementById('legendBody'),
-    legendChevron: document.getElementById('legendChevron'),
-    hudLatLonVal: document.getElementById('hudLatLonVal'),
-    hudWindArrow: document.getElementById('hudWindArrow'),
-    hudWindVal: document.getElementById('hudWindVal'),
-    hudCurrentArrow: document.getElementById('hudCurrentArrow'),
-    hudCurrentVal: document.getElementById('hudCurrentVal'),
-    scrubberPhaseBadge: document.getElementById('scrubberPhaseBadge'),
     timeSlider: document.getElementById('timeSlider'),
     scrubberTimeDisplay: document.getElementById('scrubberTimeDisplay'),
 
@@ -227,6 +204,10 @@ document?.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ---- Command Center page only below ----
+    if (!appState.dbId) {
+        await generateNewInvestigationId();
+    }
+
     initNav();
     initLeafletMap();
     initInputBar();
@@ -235,23 +216,6 @@ document?.addEventListener('DOMContentLoaded', async () => {
     initEnvironmentalControls();
     initVesselAttribution();
     initEvidence();
-    initMapControlsAndLegend();
-
-    // Populate active incident telemetry so side and bottom sections are never empty
-    if (appState.vessels.length === 0) {
-        generateVesselsAroundOrigin();
-    }
-    renderVesselsTable();
-    const currentSel = appState.vessels.find(v => v.id === appState.selectedVesselId) || appState.vessels[0];
-    if (currentSel) showVesselDetail(currentSel);
-    updateUIElements();
-    updateMetoceanHudVectors();
-    renderEvidenceChain();
-    generateDossier();
-
-    if (!appState.dbId) {
-        generateNewInvestigationId().catch(e => console.warn('Background ID generation:', e));
-    }
 
     if (appState.analysisComplete) {
         if (DOM.runBtn) {
@@ -268,6 +232,10 @@ document?.addEventListener('DOMContentLoaded', async () => {
             step.classList.add('done');
             if (!step.textContent.includes('✓')) step.textContent += ' ✓';
         });
+
+        DOM.results?.classList.remove('hidden');
+        DOM.driftPanel?.classList.remove('hidden');
+        DOM.vesselsPanel?.classList.remove('hidden');
 
         setTimeout(() => {
             renderMapLayers();
@@ -323,15 +291,11 @@ function initNav() {
 
 async function generateNewInvestigationId() {
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
         const res = await fetch(`${CONFIG.API_BASE_URL}/investigations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lat: appState.coordinates.lat, lon: appState.coordinates.lon }),
-            signal: controller.signal
+            body: JSON.stringify({ lat: appState.coordinates.lat, lon: appState.coordinates.lon })
         });
-        clearTimeout(timeoutId);
         const json = await res.json();
         if (json.success) {
             appState.investigationId = json.data.code;
@@ -340,13 +304,7 @@ async function generateNewInvestigationId() {
             if (DOM.heroIncidentId) DOM.heroIncidentId.textContent = appState.investigationId;
             if (DOM.dossierId) DOM.dossierId.textContent = appState.investigationId;
         }
-    } catch (e) {
-        console.warn('Backend unavailable, running in local/demo mode:', e);
-        if (!appState.investigationId) {
-            appState.investigationId = 'OT-2026-0913-001';
-            if (DOM.navInvestigationId) DOM.navInvestigationId.textContent = appState.investigationId;
-        }
-    }
+    } catch (e) { console.error('Failed to create investigation:', e); }
 }
 
 function initLeafletMap() {
@@ -354,119 +312,69 @@ function initLeafletMap() {
         if (!document.getElementById('leafletMap')) return;
         map = L.map('leafletMap', {
             center: [appState.coordinates.lat, appState.coordinates.lon],
-            zoom: 11,
-            zoomControl: true,
-            attributionControl: false
+            zoom: 10,
+            zoomControl: true
         });
 
-        // CartoDB Dark Matter with labels — high-clarity maritime cartography
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
+
+        // Use Stadia Maps dark tile — free, no API key needed
+        L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 20
         }).addTo(map);
 
-        // Nautical/Metric scale control
-        L.control.scale({
-            imperial: false,
-            metric: true,
-            position: 'bottomleft'
-        }).addTo(map);
-
-        // Track live coordinates in HUD
-        map.on('mousemove', (e) => {
-            if (DOM.hudLatLonVal) {
-                DOM.hudLatLonVal.textContent = `${e.latlng.lat.toFixed(4)}°N, ${e.latlng.lng.toFixed(4)}°E`;
-            }
-        });
 
         map.on('click', (e) => {
             const lat = parseFloat(e.latlng.lat.toFixed(4));
             const lon = parseFloat(e.latlng.lng.toFixed(4));
 
-            if (DOM.inputLat) DOM.inputLat.value = lat;
-            if (DOM.inputLon) DOM.inputLon.value = lon;
+            DOM.inputLat.value = lat;
+            DOM.inputLon.value = lon;
             updateInvestigationLocation(lat, lon);
         });
 
-        window.addEventListener('resize', () => {
-            map?.invalidateSize();
-        });
 
         initMapLayerToggles();
+
+
         renderMapLayers();
 
     } catch (e) {
-        console.warn('Leaflet load fallback mode:', e);
+        console.warn('Leaflet CDN load fallback mode:', e);
         document.getElementById('mapFallback')?.classList.remove('hidden');
-    }
-}
-
-function initMapControlsAndLegend() {
-    DOM.legendToggleBtn?.addEventListener('click', () => {
-        const isHidden = DOM.legendBody?.classList.contains('hidden');
-        if (isHidden) {
-            DOM.legendBody?.classList.remove('hidden');
-            DOM.legendChevron?.classList.add('open');
-            DOM.legendToggleBtn?.setAttribute('aria-expanded', 'true');
-        } else {
-            DOM.legendBody?.classList.add('hidden');
-            DOM.legendChevron?.classList.remove('open');
-            DOM.legendToggleBtn?.setAttribute('aria-expanded', 'false');
-        }
-    });
-
-    DOM.mapCenterSpillBtn?.addEventListener('click', () => {
-        if (!map) return;
-        const cLat = appState.detection.centroid?.lat || appState.coordinates.lat + 0.005;
-        const cLon = appState.detection.centroid?.lon || appState.coordinates.lon + 0.003;
-        map.flyTo([cLat, cLon], 12, { duration: 1.0 });
-    });
-
-    updateMetoceanHudVectors();
-}
-
-function updateMetoceanHudVectors() {
-    if (DOM.hudWindArrow && DOM.hudWindVal) {
-        DOM.hudWindArrow.style.transform = `rotate(${appState.environment.windDir}deg)`;
-        DOM.hudWindVal.textContent = `${appState.environment.windDir.toString().padStart(3, '0')}° ${appState.environment.windSpeed}kt`;
-    }
-    if (DOM.hudCurrentArrow && DOM.hudCurrentVal) {
-        DOM.hudCurrentArrow.style.transform = `rotate(${appState.environment.currentDir}deg)`;
-        DOM.hudCurrentVal.textContent = `${appState.environment.currentDir.toString().padStart(3, '0')}° ${appState.environment.currentSpeed}m/s`;
     }
 }
 
 function initMapLayerToggles() {
     DOM.layerSpill?.addEventListener('change', (e) => {
         appState.layers.spill = e.target.checked;
-        if (mapLayers.spillGroup) {
-            if (e.target.checked) mapLayers.spillGroup.addTo(map);
-            else mapLayers.spillGroup.remove();
+        if (mapLayers.spillPolygon) {
+            if (e.target.checked) mapLayers.spillPolygon.addTo(map);
+            else mapLayers.spillPolygon.remove();
         }
     });
 
     DOM.layerOrigin?.addEventListener('change', (e) => {
         appState.layers.origin = e.target.checked;
-        if (mapLayers.originGroup) {
-            if (e.target.checked) mapLayers.originGroup.addTo(map);
-            else mapLayers.originGroup.remove();
+        if (mapLayers.originCircle) {
+            if (e.target.checked) mapLayers.originCircle.addTo(map);
+            else mapLayers.originCircle.remove();
         }
     });
 
     DOM.layerBackDrift?.addEventListener('change', (e) => {
         appState.layers.backDrift = e.target.checked;
-        if (mapLayers.backDriftGroup) {
-            if (e.target.checked) mapLayers.backDriftGroup.addTo(map);
-            else mapLayers.backDriftGroup.remove();
+        if (mapLayers.backDriftPolyline) {
+            if (e.target.checked) mapLayers.backDriftPolyline.addTo(map);
+            else mapLayers.backDriftPolyline.remove();
         }
     });
 
     DOM.layerForwardDrift?.addEventListener('change', (e) => {
         appState.layers.forwardDrift = e.target.checked;
-        if (mapLayers.forwardDriftGroup) {
-            if (e.target.checked) mapLayers.forwardDriftGroup.addTo(map);
-            else mapLayers.forwardDriftGroup.remove();
+        if (mapLayers.forwardDriftPolyline) {
+            if (e.target.checked) mapLayers.forwardDriftPolyline.addTo(map);
+            else mapLayers.forwardDriftPolyline.remove();
         }
     });
 
@@ -492,28 +400,22 @@ function initMapLayerToggles() {
             if (e.target.checked) m.addTo(map);
             else m.remove();
         });
-        mapLayers.satelliteEventMarkers.forEach(m => {
-            if (e.target.checked) m.addTo(map);
-            else m.remove();
-        });
     });
 
     DOM.mapResetBtn?.addEventListener('click', () => {
         if (!map) return;
-        map.setView([appState.coordinates.lat, appState.coordinates.lon], 11);
+        map.setView([appState.coordinates.lat, appState.coordinates.lon], 10);
     });
 
     DOM.mapFitBoundsBtn?.addEventListener('click', () => {
-        if (!map) return;
-        const features = [
-            mapLayers.spillGroup,
-            mapLayers.originGroup,
-            mapLayers.backDriftGroup,
-            mapLayers.forwardDriftGroup
-        ].filter(Boolean);
-        const featureGroup = L.featureGroup(features);
+        if (!map || !mapLayers.spillPolygon) return;
+        const featureGroup = L.featureGroup([
+            mapLayers.spillPolygon,
+            mapLayers.originCircle,
+            mapLayers.backDriftPolyline
+        ].filter(Boolean));
         if (featureGroup.getLayers().length) {
-            map.fitBounds(featureGroup.getBounds().pad(0.18));
+            map.fitBounds(featureGroup.getBounds().pad(0.2));
         }
     });
 }
@@ -550,19 +452,6 @@ async function updateInvestigationLocation(lat, lon) {
 
     if (map) {
         map.panTo([lat, lon]);
-
-        // Temporary tactical reticle ping (single smooth 1.5s indicator)
-        const pingIcon = L.divIcon({
-            className: 'investigation-target-ring',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
-        });
-        const pingMarker = L.marker([lat, lon], { icon: pingIcon }).addTo(map);
-        setTimeout(() => pingMarker.remove(), 1600);
-    }
-
-    if (DOM.hudLatLonVal) {
-        DOM.hudLatLonVal.textContent = `${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E`;
     }
 
     if (appState.dbId) {
@@ -582,17 +471,21 @@ function calculateDriftTrajectory(startLat, startLon, windSpd, windDir, currSpd,
     const stepHours = 3;
     const steps = Math.ceil(durationHours / stepHours);
 
+
     const windRad = (90 - windDir) * (Math.PI / 180);
     const windU = Math.cos(windRad) * windSpd * appState.drift.leewayFactor;
     const windV = Math.sin(windRad) * windSpd * appState.drift.leewayFactor;
+
 
     const currKts = currSpd * 1.94384;
     const currRad = (90 - currDir) * (Math.PI / 180);
     const currU = Math.cos(currRad) * currKts;
     const currV = Math.sin(currRad) * currKts;
 
+
     const totalU = currU + windU;
     const totalV = currV + windV;
+
 
     const dirMult = isBackwards ? -1 : 1;
 
@@ -602,8 +495,11 @@ function calculateDriftTrajectory(startLat, startLon, windSpd, windDir, currSpd,
 
     for (let i = 1; i <= steps; i++) {
         const deltaHours = stepHours;
+
         const deltaLat = (totalV * deltaHours * dirMult) / 60.0;
+
         const deltaLon = (totalU * deltaHours * dirMult) / (60.0 * Math.cos(curLat * Math.PI / 180));
+
         curLat += deltaLat;
         curLon += deltaLon;
         points.push([parseFloat(curLat.toFixed(4)), parseFloat(curLon.toFixed(4))]);
@@ -618,9 +514,11 @@ function calculateUncertaintyCone(trajectoryPoints) {
     const coneRight = [];
 
     trajectoryPoints.forEach((pt, index) => {
+        // Expand perpendicular to the drift direction
         const expansionKm = 1.0 + (index * 1.8) + (appState.whatIf.radiusKm * 0.15);
         const latOffset = expansionKm / 111.0;
         const lonOffset = expansionKm / (111.0 * Math.cos(pt[0] * Math.PI / 180));
+        // Perpendicular: swap lat/lon offsets to go sideways relative to trajectory
         coneLeft.push([pt[0] + lonOffset, pt[1] - latOffset]);
         coneRight.unshift([pt[0] - lonOffset, pt[1] + latOffset]);
     });
@@ -631,130 +529,57 @@ function calculateUncertaintyCone(trajectoryPoints) {
 function recalculatePhysicsAndRender() {
     renderMapLayers();
     updateUIElements();
-    updateMetoceanHudVectors();
-}
-
-function generateOrganicSlickCoords(lat, lon) {
-    // Irregular multi-vertex polygon mimicking SAR high-attenuation emulsion
-    const coreOffsets = [
-        [0.015, -0.012], [0.021, -0.002], [0.024, 0.009], [0.017, 0.021],
-        [0.006, 0.028], [-0.007, 0.024], [-0.016, 0.015], [-0.022, 0.004],
-        [-0.019, -0.008], [-0.012, -0.018], [-0.002, -0.022], [0.008, -0.019]
-    ];
-    const coreCoords = coreOffsets.map(off => [parseFloat((lat + off[0]).toFixed(4)), parseFloat((lon + off[1]).toFixed(4))]);
-    const sheenCoords = coreOffsets.map(off => [parseFloat((lat + off[0] * 1.38).toFixed(4)), parseFloat((lon + off[1] * 1.38).toFixed(4))]);
-    return { coreCoords, sheenCoords };
-}
-
-function generateSlickPolygonCoords(lat, lon) {
-    return generateOrganicSlickCoords(lat, lon).coreCoords;
 }
 
 function renderMapLayers() {
     if (!map) return;
 
-    // Clean up all existing map layer instances cleanly
+
     if (mapLayers.investigationMarker) mapLayers.investigationMarker.remove();
-    if (mapLayers.spillGroup) mapLayers.spillGroup.remove();
-    if (mapLayers.originGroup) mapLayers.originGroup.remove();
-    if (mapLayers.backDriftGroup) mapLayers.backDriftGroup.remove();
-    if (mapLayers.forwardDriftGroup) mapLayers.forwardDriftGroup.remove();
+    if (mapLayers.spillPolygon) mapLayers.spillPolygon.remove();
+    if (mapLayers.originCircle) mapLayers.originCircle.remove();
+    if (mapLayers.backDriftPolyline) mapLayers.backDriftPolyline.remove();
+    if (mapLayers.forwardDriftPolyline) mapLayers.forwardDriftPolyline.remove();
     if (mapLayers.uncertaintyConePolygon) mapLayers.uncertaintyConePolygon.remove();
     mapLayers.vesselTrackLines.forEach(l => l.remove());
     mapLayers.vesselMarkers.forEach(m => m.remove());
-    mapLayers.satelliteEventMarkers.forEach(m => m.remove());
-    if (mapLayers.scrubberTrackBeacon) mapLayers.scrubberTrackBeacon.remove();
     mapLayers.vesselTrackLines = [];
     mapLayers.vesselMarkers = [];
-    mapLayers.satelliteEventMarkers = [];
 
     const center = [appState.coordinates.lat, appState.coordinates.lon];
 
-    // Investigation center marker
+
     mapLayers.investigationMarker = L.marker(center, {
         title: 'Investigation Centroid'
-    }).addTo(map).bindTooltip('📍 Investigation Center', { sticky: true, className: 'mono' }).bindPopup(`
-        <div class="marine-popup">
-            <div class="popup-header">
-                <span class="popup-tag tag-teal">CENTER</span>
-                <span class="mono text-muted text-xs">${appState.investigationId}</span>
-            </div>
-            <div class="popup-title">Investigation Operational Area</div>
-            <div class="popup-grid">
-                <span class="label">Latitude:</span><span class="val mono">${appState.coordinates.lat.toFixed(4)}°N</span>
-                <span class="label">Longitude:</span><span class="val mono">${appState.coordinates.lon.toFixed(4)}°E</span>
-            </div>
+    }).addTo(map).bindTooltip('📍 Investigation Location', { sticky: true, className: 'mono' }).bindPopup(`
+        <div class="mono">
+            <strong>Investigation Location</strong><br>
+            Lat: ${appState.coordinates.lat.toFixed(4)} &deg;N<br>
+            Lon: ${appState.coordinates.lon.toFixed(4)} &deg;E
         </div>
     `);
 
+
+    // Use detection centroid (slightly offset from investigation point)
     const cLat = appState.detection.centroid?.lat || appState.coordinates.lat + 0.005;
     const cLon = appState.detection.centroid?.lon || appState.coordinates.lon + 0.003;
 
-    // 1. Detected Oil Slick (Multi-layered: Core Emulsion + Sheen Boundary + Centroid)
-    const { coreCoords, sheenCoords } = generateOrganicSlickCoords(cLat, cLon);
+    if (appState.analysisComplete) {
+        let spillCoords;
+        if (appState.detection.polygon && appState.detection.polygon.coordinates) {
+            spillCoords = appState.detection.polygon.coordinates[0].map(pt => [pt[1], pt[0]]);
+        } else {
+            spillCoords = generateSlickPolygonCoords(cLat, cLon);
+        }
+        mapLayers.spillPolygon = L.polygon(spillCoords, {
+            color: '#eab308',
+            fillColor: '#eab308',
+            fillOpacity: 0.35,
+            weight: 2
+        }).bindTooltip('🛢️ Oil Slick (AI)', { sticky: true, className: 'mono' }).bindPopup(`<div class="mono"><strong>🛢️ Oil Slick</strong><br>Area: ${appState.detection.areaKm2 || 14.8} km²<br>Confidence: ${appState.detection.confidence || 87}%<br>Age: ~${appState.detection.slickAgeHours || 24}h</div>`);
+        if (appState.layers.spill) mapLayers.spillPolygon.addTo(map);
+    }
 
-    mapLayers.spillSheenPolygon = L.polygon(sheenCoords, {
-        color: '#eab308',
-        fillColor: '#eab308',
-        fillOpacity: 0.12,
-        weight: 1,
-        dashArray: '4,4'
-    }).bindTooltip('🟡 Low Confidence Sheen Boundary', { sticky: true, className: 'mono' });
-
-    mapLayers.spillPolygon = L.polygon(coreCoords, {
-        color: '#f59e0b',
-        fillColor: '#ca8a04',
-        fillOpacity: 0.52,
-        weight: 1.8
-    }).bindTooltip('🛢️ Detected Mineral Oil Slick (High Confidence)', { sticky: true, className: 'mono' });
-
-    const slickCentroidSvg = `
-        <svg viewBox="0 0 24 24" width="22" height="22">
-            <circle cx="12" cy="12" r="8" fill="none" stroke="#f59e0b" stroke-width="2"/>
-            <line x1="12" y1="2" x2="12" y2="6" stroke="#f59e0b" stroke-width="2"/>
-            <line x1="12" y1="18" x2="12" y2="22" stroke="#f59e0b" stroke-width="2"/>
-            <line x1="2" y1="12" x2="6" y2="12" stroke="#f59e0b" stroke-width="2"/>
-            <line x1="18" y1="12" x2="22" y2="12" stroke="#f59e0b" stroke-width="2"/>
-            <circle cx="12" cy="12" r="2.5" fill="#f59e0b"/>
-        </svg>
-    `;
-    const centroidIcon = L.divIcon({
-        className: 'slick-centroid-icon',
-        html: slickCentroidSvg,
-        iconSize: [22, 22],
-        iconAnchor: [11, 11]
-    });
-    mapLayers.spillCentroidMarker = L.marker([cLat, cLon], { icon: centroidIcon })
-        .bindTooltip('🎯 Spill Centroid (Sentinel-1 SAR)', { sticky: true, className: 'mono' });
-
-    const spillPopupHtml = `
-        <div class="marine-popup">
-            <div class="popup-header">
-                <span class="popup-tag tag-warning">SAR CONFIRMED</span>
-                <span class="mono text-muted text-xs">${appState.investigationId}</span>
-            </div>
-            <div class="popup-title">Mineral Oil Slick Detected</div>
-            <div class="popup-grid">
-                <span class="label">Confidence:</span><span class="val mono text-warning bold">${appState.detection.confidence}%</span>
-                <span class="label">Sensor:</span><span class="val mono">Sentinel-1 SAR</span>
-                <span class="label">Est. Area:</span><span class="val mono">${appState.detection.areaKm2} km²</span>
-                <span class="label">Centroid:</span><span class="val mono">${cLat.toFixed(4)}°N, ${cLon.toFixed(4)}°E</span>
-                <span class="label">Est. Slick Age:</span><span class="val mono">${appState.detection.slickAgeHours || 24} hrs</span>
-                <span class="label">Damping Signature:</span><span class="val mono">Consistent with Oil</span>
-            </div>
-        </div>
-    `;
-    mapLayers.spillPolygon.bindPopup(spillPopupHtml);
-    mapLayers.spillCentroidMarker.bindPopup(spillPopupHtml);
-
-    mapLayers.spillGroup = L.featureGroup([
-        mapLayers.spillSheenPolygon,
-        mapLayers.spillPolygon,
-        mapLayers.spillCentroidMarker
-    ]);
-    if (appState.layers.spill) mapLayers.spillGroup.addTo(map);
-
-    // 2. Trajectories Calculation
     let backTrack = appState.drift.trajectoryBack;
     let fwdTrack = appState.drift.trajectoryForward;
 
@@ -764,7 +589,6 @@ function renderMapLayers() {
             appState.environment.currentSpeed, appState.environment.currentDir,
             appState.drift.forecastHours, true
         );
-        appState.drift.trajectoryBack = backTrack;
     }
     if (!fwdTrack || fwdTrack.length === 0) {
         fwdTrack = calculateDriftTrajectory(
@@ -772,151 +596,40 @@ function renderMapLayers() {
             appState.environment.currentSpeed, appState.environment.currentDir,
             appState.drift.forecastHours, false
         );
-        appState.drift.trajectoryForward = fwdTrack;
     }
 
+    // Update origin from back-drift end point
     if (backTrack.length > 0) {
         const originPt = backTrack[backTrack.length - 1];
         appState.origin.lat = originPt[0];
         appState.origin.lon = originPt[1];
     }
 
-    // 3. Estimated Origin Zone (Probability Region + Inner Core + Centroid Target)
     mapLayers.originCircle = L.circle([appState.origin.lat, appState.origin.lon], {
         radius: appState.origin.radiusKm * 1000,
         color: '#f97316',
         fillColor: '#f97316',
-        fillOpacity: 0.12,
+        fillOpacity: 0.18,
         dashArray: '6,6',
-        weight: 1.5
-    }).bindTooltip('🟠 Origin Probability Zone (90% Envelope)', { sticky: true, className: 'mono' });
+        weight: 2
+    }).bindTooltip('🔴 Probable Origin Zone', { sticky: true, className: 'mono' }).bindPopup(`<div class="mono"><strong>🔴 Probable Origin Zone</strong><br>Lat: ${appState.origin.lat.toFixed(4)}°N<br>Lon: ${appState.origin.lon.toFixed(4)}°E<br>Radius: ${appState.origin.radiusKm} km</div>`);
+    if (appState.layers.origin) mapLayers.originCircle.addTo(map);
 
-    mapLayers.originInnerCircle = L.circle([appState.origin.lat, appState.origin.lon], {
-        radius: appState.origin.radiusKm * 480,
-        color: '#ea580c',
-        fillColor: '#ea580c',
-        fillOpacity: 0.22,
-        weight: 1
-    }).bindTooltip('🟠 High Probability Core (50% Envelope)', { sticky: true, className: 'mono' });
-
-    const originTargetSvg = `
-        <svg viewBox="0 0 24 24" width="22" height="22">
-            <circle cx="12" cy="12" r="9" fill="none" stroke="#f97316" stroke-width="1.8" stroke-dasharray="3,2"/>
-            <circle cx="12" cy="12" r="5" fill="none" stroke="#f97316" stroke-width="1.5"/>
-            <circle cx="12" cy="12" r="2.5" fill="#f97316"/>
-        </svg>
-    `;
-    const originIcon = L.divIcon({
-        className: 'origin-centroid-icon',
-        html: originTargetSvg,
-        iconSize: [22, 22],
-        iconAnchor: [11, 11]
-    });
-    mapLayers.originCentroidMarker = L.marker([appState.origin.lat, appState.origin.lon], { icon: originIcon })
-        .bindTooltip('🎯 Probable Spill Source Origin Point', { sticky: true, className: 'mono' });
-
-    const originPopupHtml = `
-        <div class="marine-popup">
-            <div class="popup-header">
-                <span class="popup-tag tag-origin">DRIFT ORIGIN</span>
-                <span class="mono text-muted text-xs">BACKWARD DRIFT</span>
-            </div>
-            <div class="popup-title">Estimated Spill Origin Zone</div>
-            <div class="popup-grid">
-                <span class="label">Origin Center:</span><span class="val mono">${appState.origin.lat.toFixed(4)}°N, ${appState.origin.lon.toFixed(4)}°E</span>
-                <span class="label">Uncertainty Radius:</span><span class="val mono">${appState.origin.radiusKm} km</span>
-                <span class="label">Release Window:</span><span class="val mono">T - 36h to T - 18h</span>
-                <span class="label">Attribution Model:</span><span class="val mono">Lagrangian Inversion</span>
-            </div>
-        </div>
-    `;
-    mapLayers.originCircle.bindPopup(originPopupHtml);
-    mapLayers.originCentroidMarker.bindPopup(originPopupHtml);
-
-    mapLayers.originGroup = L.featureGroup([
-        mapLayers.originCircle,
-        mapLayers.originInnerCircle,
-        mapLayers.originCentroidMarker
-    ]);
-    if (appState.layers.origin) mapLayers.originGroup.addTo(map);
-
-    // 4. Lagrangian Back-Drift Trajectory + Direction Waypoints
     mapLayers.backDriftPolyline = L.polyline(backTrack, {
         color: '#f97316',
         weight: 2.5,
-        dashArray: '8, 5',
+        dashArray: '8,6',
         opacity: 0.9
-    }).bindTooltip('◀️ Lagrangian Back-Drift Trajectory (Past T-)', { sticky: true, className: 'mono' });
+    }).bindTooltip('⬅️ Back-Drift Trajectory', { sticky: true, className: 'mono' }).bindPopup('<div class="mono"><strong>⬅️ Back-Drift Trajectory</strong><br>Traces slick backwards to probable source</div>');
+    if (appState.layers.backDrift) mapLayers.backDriftPolyline.addTo(map);
 
-    mapLayers.backDriftWaypoints = [];
-    const backHoursSteps = [12, 24, 36, 48];
-    backHoursSteps.forEach(h => {
-        const stepIdx = Math.min(backTrack.length - 1, Math.floor((h / appState.drift.forecastHours) * (backTrack.length - 1)));
-        if (stepIdx > 0 && stepIdx < backTrack.length) {
-            const pt = backTrack[stepIdx];
-            const wpIcon = L.divIcon({
-                className: 'drift-waypoint-container',
-                html: `<div class="drift-waypoint-marker">◀ T-${h}h</div>`,
-                iconSize: [44, 16],
-                iconAnchor: [22, 8]
-            });
-            const wpMarker = L.marker(pt, { icon: wpIcon })
-                .bindTooltip(`Back-Drift Waypoint: T-${h}h<br>Coordinates: ${pt[0].toFixed(3)}°N, ${pt[1].toFixed(3)}°E`, { sticky: true, className: 'mono' });
-            mapLayers.backDriftWaypoints.push(wpMarker);
-        }
-    });
-
-    mapLayers.backDriftGroup = L.featureGroup([
-        mapLayers.backDriftPolyline,
-        ...mapLayers.backDriftWaypoints
-    ]);
-    if (appState.layers.backDrift) mapLayers.backDriftGroup.addTo(map);
-
-    // 5. Forward Forecast Trajectory + Future Dispersion Circles
     mapLayers.forwardDriftPolyline = L.polyline(fwdTrack, {
         color: '#0ea5e9',
         weight: 2.5,
-        dashArray: '6, 4',
         opacity: 0.85
-    }).bindTooltip('▶️ Forecast Drift Trajectory (Future T+)', { sticky: true, className: 'mono' });
+    }).bindTooltip('➡️ Forecast Trajectory', { sticky: true, className: 'mono' }).bindPopup('<div class="mono"><strong>➡️ Forecast Trajectory</strong><br>Predicted future drift of slick</div>');
+    if (appState.layers.forwardDrift) mapLayers.forwardDriftPolyline.addTo(map);
 
-    mapLayers.forwardDriftWaypoints = [];
-    mapLayers.forwardDriftDispersion = [];
-    const fwdHoursSteps = [12, 24, 48];
-    fwdHoursSteps.forEach(h => {
-        const stepIdx = Math.min(fwdTrack.length - 1, Math.floor((h / appState.drift.forecastHours) * (fwdTrack.length - 1)));
-        if (stepIdx > 0 && stepIdx < fwdTrack.length) {
-            const pt = fwdTrack[stepIdx];
-            const wpIcon = L.divIcon({
-                className: 'drift-waypoint-container',
-                html: `<div class="drift-waypoint-marker drift-waypoint-forecast">▶ T+${h}h</div>`,
-                iconSize: [44, 16],
-                iconAnchor: [22, 8]
-            });
-            const wpMarker = L.marker(pt, { icon: wpIcon })
-                .bindTooltip(`Forecast Drift Waypoint: T+${h}h<br>Coordinates: ${pt[0].toFixed(3)}°N, ${pt[1].toFixed(3)}°E`, { sticky: true, className: 'mono' });
-            mapLayers.forwardDriftWaypoints.push(wpMarker);
-
-            const dispersionCircle = L.circle(pt, {
-                radius: (1.5 + h * 0.08) * 1000,
-                color: '#0ea5e9',
-                fillColor: '#0ea5e9',
-                fillOpacity: 0.06,
-                dashArray: '3, 4',
-                weight: 1
-            }).bindTooltip(`Projected Spill Dispersion Envelope at T+${h}h`, { sticky: true, className: 'mono' });
-            mapLayers.forwardDriftDispersion.push(dispersionCircle);
-        }
-    });
-
-    mapLayers.forwardDriftGroup = L.featureGroup([
-        mapLayers.forwardDriftPolyline,
-        ...mapLayers.forwardDriftWaypoints,
-        ...mapLayers.forwardDriftDispersion
-    ]);
-    if (appState.layers.forwardDrift) mapLayers.forwardDriftGroup.addTo(map);
-
-    // 6. Monte Carlo Uncertainty Cone
     let coneCoords = appState._uncertaintyCone;
     if (!coneCoords || coneCoords.length === 0) {
         coneCoords = calculateUncertaintyCone(backTrack);
@@ -927,140 +640,61 @@ function renderMapLayers() {
         fillOpacity: 0.07,
         weight: 1,
         dashArray: '4,4'
-    }).bindTooltip('🌫️ Monte Carlo Drift Uncertainty Envelope (95% CI)', { sticky: true, className: 'mono' });
+    }).bindTooltip('🌫️ Uncertainty Cone', { sticky: true, className: 'mono' });
     if (appState.layers.cone) mapLayers.uncertaintyConePolygon.addTo(map);
 
-    // 7. Vessels & Anomaly Correlation
-    if (appState.vessels.length === 0) {
-        generateVesselsAroundOrigin();
-    }
     updateVesselMapPositions();
+}
+
+function generateSlickPolygonCoords(lat, lon) {
+    return [
+        [lat + 0.012, lon - 0.015],
+        [lat + 0.022, lon + 0.005],
+        [lat + 0.008, lon + 0.025],
+        [lat - 0.015, lon + 0.018],
+        [lat - 0.018, lon - 0.008],
+        [lat - 0.005, lon - 0.022]
+    ];
 }
 
 function updateVesselMapPositions() {
     if (!map) return;
     mapLayers.vesselTrackLines.forEach(l => l.remove());
     mapLayers.vesselMarkers.forEach(m => m.remove());
-    mapLayers.satelliteEventMarkers.forEach(m => m.remove());
     mapLayers.vesselTrackLines = [];
     mapLayers.vesselMarkers = [];
-    mapLayers.satelliteEventMarkers = [];
 
     appState.vessels.forEach(v => {
-        const isSelected = v.id === appState.selectedVesselId;
-        const isTop = v.id === 'v1';
 
-        // Render vessel track lines
-        if (v.anomaly) {
-            // AIS Transmission Gap: Segment 1 (continuous), Segment 2 (broken red gap during release window), Segment 3 (continuous)
-            const seg1 = [v.trackPoints[0], v.trackPoints[1]];
-            const segGap = [v.trackPoints[1], v.trackPoints[2], v.trackPoints[3]];
-            const seg3 = [v.trackPoints[3], v.trackPoints[4]];
+        const trackLine = L.polyline(v.trackPoints, {
+            color: v.id === appState.selectedVesselId ? '#f97316' : '#64748b',
+            weight: v.id === appState.selectedVesselId ? 3 : 1.5,
+            opacity: 0.7
+        }).bindTooltip(`〰️ ${v.name} Track`, { sticky: true, className: 'mono' });
+        if (appState.layers.vesselTracks) trackLine.addTo(map);
+        mapLayers.vesselTrackLines.push(trackLine);
 
-            const line1 = L.polyline(seg1, { color: '#64748b', weight: 1.5, opacity: 0.7 }).bindTooltip(`〰️ ${v.name} Nominal AIS Track`, { sticky: true, className: 'mono' });
-            const lineGap = L.polyline(segGap, { color: '#ef4444', weight: 2.5, dashArray: '5, 5', opacity: 0.95 }).bindTooltip(`⚠️ ${v.name} AIS Transmission Gap Section`, { sticky: true, className: 'mono' });
-            const line3 = L.polyline(seg3, { color: '#64748b', weight: 1.5, opacity: 0.7 }).bindTooltip(`〰️ ${v.name} Re-acquired AIS Track`, { sticky: true, className: 'mono' });
 
-            [line1, lineGap, line3].forEach(l => {
-                if (appState.layers.vesselTracks) l.addTo(map);
-                mapLayers.vesselTrackLines.push(l);
-            });
-
-            // Satellite SAR detection event during missing AIS transmission
-            const satPt = v.trackPoints[2];
-            const satIcon = L.divIcon({
-                className: 'satellite-event-icon',
-                html: `
-                    <div style="background:#ef4444; border:1.5px solid #fff; border-radius:3px; padding:1px 5px; font-size:9px; color:#fff; font-family:var(--font-mono); font-weight:700; display:flex; align-items:center; gap:3px; box-shadow:0 0 8px rgba(239,68,68,0.8);">
-                        <span>📡 SAR RADAR TARGET</span>
-                    </div>
-                `,
-                iconSize: [120, 20],
-                iconAnchor: [60, 10]
-            });
-            const satMarker = L.marker(satPt, { icon: satIcon })
-                .bindTooltip('📡 SAR Physical Target Detected (AIS Broadcast Offline)<br>Spatial Match: 98% • Human Verification Required', { sticky: true, className: 'mono' })
-                .bindPopup(`
-                    <div class="marine-popup">
-                        <div class="popup-header">
-                            <span class="popup-tag tag-danger">AIS / SAR MISMATCH</span>
-                            <span class="mono text-muted text-xs">UNVERIFIED TARGET</span>
-                        </div>
-                        <div class="popup-title">Physical Radar Detection During AIS Gap</div>
-                        <div class="popup-grid">
-                            <span class="label">Condition:</span><span class="val mono text-danger bold">AIS Signal Gap</span>
-                            <span class="label">SAR Sensor:</span><span class="val mono">Sentinel-1 Radar</span>
-                            <span class="label">Target Location:</span><span class="val mono">${satPt[0].toFixed(4)}°N, ${satPt[1].toFixed(4)}°E</span>
-                            <span class="label">Correlation Score:</span><span class="val mono bold text-warning">${v.score}%</span>
-                            <span class="label">Protocol:</span><span class="val mono">Human Verification Required</span>
-                        </div>
-                    </div>
-                `);
-            if (appState.layers.vessels) satMarker.addTo(map);
-            mapLayers.satelliteEventMarkers.push(satMarker);
-
-        } else {
-            const trackLine = L.polyline(v.trackPoints, {
-                color: isSelected ? '#f97316' : (isTop ? '#f59e0b' : '#64748b'),
-                weight: isSelected ? 3.5 : (isTop ? 2.5 : 1.5),
-                opacity: isSelected ? 0.95 : (isTop ? 0.85 : 0.65)
-            }).bindTooltip(`〰️ ${v.name} Track`, { sticky: true, className: 'mono' });
-
-            if (appState.layers.vesselTracks) trackLine.addTo(map);
-            mapLayers.vesselTrackLines.push(trackLine);
-        }
-
-        // Current / Interpolated position
         const curPos = getVesselPositionAtHour(v, appState.timelineHour);
 
-        // Vessel heading in degrees
-        const headingDeg = parseInt(v.cog) || 45;
-        const fillColor = isSelected ? '#f97316' : (isTop ? '#f97316' : (v.anomaly ? '#ef4444' : (v.score >= 60 ? '#0ea5e9' : '#64748b')));
-        const strokeColor = isSelected ? '#ffffff' : (isTop ? '#fef08a' : '#ffffff');
-
-        const vesselHtml = `
-            <div class="tactical-vessel-marker" title="${v.name}">
-                <div style="transform: rotate(${headingDeg}deg); width:20px; height:20px; display:flex; align-items:center; justify-content:center;">
-                    <svg class="vessel-ship-icon" viewBox="0 0 24 24" width="20" height="20">
-                        <polygon points="12,2 20,20 12,16 4,20" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1.8"/>
-                    </svg>
-                </div>
-                ${isTop ? '<div class="top-candidate-badge">#1</div>' : ''}
-                ${v.anomaly ? '<div class="ais-anomaly-icon">!</div>' : ''}
-            </div>
-        `;
+        const isSelected = v.id === appState.selectedVesselId;
+        const iconColor = isSelected ? '#f97316' : (v.anomaly ? '#ef4444' : '#0ea5e9');
 
         const customIcon = L.divIcon({
-            className: 'custom-vessel-icon-wrapper',
-            html: vesselHtml,
-            iconSize: [22, 22],
-            iconAnchor: [11, 11]
+            className: 'custom-vessel-icon',
+            html: `<div style="width:14px; height:14px; background:${iconColor}; border:2px solid #fff; border-radius:50%; box-shadow:0 0 10px ${iconColor};"></div>`,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
         });
 
-        const marker = L.marker([curPos.lat, curPos.lon], { icon: customIcon });
-
-        const tooltipContent = `🚢 <strong>${v.name}</strong> (${v.type.toUpperCase()})<br>Score: <strong>${v.score}%</strong> | Dist: <strong>${v.distKm} km</strong> | COG: <strong>${v.cog}</strong>`;
-        marker.bindTooltip(tooltipContent, { sticky: true, className: 'mono' });
-
-        const popupContent = `
-            <div class="marine-popup">
-                <div class="popup-header">
-                    <span class="popup-tag ${isTop ? 'tag-origin' : (v.anomaly ? 'tag-danger' : 'tag-teal')}">
-                        ${isTop ? 'TOP CANDIDATE' : (v.anomaly ? 'AIS ANOMALY' : 'CANDIDATE SOURCE')}
-                    </span>
-                    <span class="mono text-muted text-xs">MMSI ${v.mmsi}</span>
-                </div>
-                <div class="popup-title">${v.name}</div>
-                <div class="popup-grid">
-                    <span class="label">SOG / COG:</span><span class="val mono">${v.sog} / ${v.cog}</span>
-                    <span class="label">Dist to Origin:</span><span class="val mono">${v.distKm} km</span>
-                    <span class="label">Investigation Score:</span><span class="val mono bold" style="color:${getScoreColorHex(v.score)}">${v.score}%</span>
-                    <span class="label">Release Overlap:</span><span class="val mono">${v.timeMatch}</span>
-                    <span class="label">AIS Broadcast:</span><span class="val mono ${v.anomaly ? 'text-danger bold' : 'text-success'}">${v.anomaly ? 'Transmission Gap' : 'Nominal Active'}</span>
-                </div>
+        const marker = L.marker([curPos.lat, curPos.lon], { icon: customIcon }).bindTooltip(`🚢 ${v.name}`, { sticky: true, className: 'mono' }).bindPopup(`
+            <div class="mono">
+                <strong>${v.name}</strong> ${v.anomaly ? '<span style="color:#ef4444;">[AIS GAP]</span>' : ''}<br>
+                MMSI: ${v.mmsi}<br>
+                SOG: ${v.sog} | COG: ${v.cog}<br>
+                Invest. Score: <strong style="color:${getScoreColorHex(v.score)};">${v.score}%</strong>
             </div>
-        `;
-        marker.bindPopup(popupContent);
+        `);
 
         marker.on('click', () => {
             appState.selectedVesselId = v.id;
@@ -1314,104 +948,33 @@ function initEnvironmentalControls() {
     DOM.sliderWindSpeed?.addEventListener('input', (e) => {
         appState.environment.windSpeed = parseInt(e.target.value);
         DOM.valWindSpeed.textContent = `${appState.environment.windSpeed} kts`;
-        updateMetoceanHudVectors();
         debouncedPatch({ environment: appState.environment });
     });
 
     DOM.sliderWindDir?.addEventListener('input', (e) => {
         appState.environment.windDir = parseInt(e.target.value);
         DOM.valWindDir.textContent = `${appState.environment.windDir.toString().padStart(3, '0')}°`;
-        updateMetoceanHudVectors();
         debouncedPatch({ environment: appState.environment });
     });
 
     DOM.sliderCurrentSpeed?.addEventListener('input', (e) => {
         appState.environment.currentSpeed = parseFloat(e.target.value);
         DOM.valCurrentSpeed.textContent = `${appState.environment.currentSpeed} m/s`;
-        updateMetoceanHudVectors();
         recalculatePhysicsAndRender();
     });
 
     DOM.sliderCurrentDir?.addEventListener('input', (e) => {
         appState.environment.currentDir = parseInt(e.target.value);
         DOM.valCurrentDir.textContent = `${appState.environment.currentDir.toString().padStart(3, '0')}°`;
-        updateMetoceanHudVectors();
         recalculatePhysicsAndRender();
     });
 
     DOM.timeSlider?.addEventListener('input', (e) => {
         appState.timelineHour = parseInt(e.target.value);
         const prefix = appState.timelineHour >= 0 ? '+' : '';
-        const phaseName = appState.timelineHour === 0 ? 'Detection' : (appState.timelineHour < 0 ? 'Origin Window' : 'Forecast Horizon');
-        DOM.scrubberTimeDisplay.textContent = `T ${prefix}${appState.timelineHour}h (${phaseName})`;
-
-        if (DOM.scrubberPhaseBadge) {
-            if (appState.timelineHour === 0) {
-                DOM.scrubberPhaseBadge.textContent = 'SATELLITE DETECTION (T-0)';
-            } else if (appState.timelineHour < 0) {
-                DOM.scrubberPhaseBadge.textContent = `RECONSTRUCTION (${appState.timelineHour}h)`;
-            } else {
-                DOM.scrubberPhaseBadge.textContent = `DRIFT FORECAST (+${appState.timelineHour}h)`;
-            }
-        }
-
-        updateScrubberMapState();
+        DOM.scrubberTimeDisplay.textContent = `T ${prefix}${appState.timelineHour}h (${appState.timelineHour === 0 ? 'Detection' : (appState.timelineHour < 0 ? 'Origin' : 'Forecast')})`;
         updateVesselMapPositions();
     });
-}
-
-function updateScrubberMapState() {
-    if (!map) return;
-    const hour = appState.timelineHour;
-
-    if (mapLayers.scrubberTrackBeacon) {
-        mapLayers.scrubberTrackBeacon.remove();
-        mapLayers.scrubberTrackBeacon = null;
-    }
-
-    if (hour < 0) {
-        const backTrack = appState.drift.trajectoryBack;
-        if (backTrack && backTrack.length > 0) {
-            const pct = Math.abs(hour) / Math.max(1, appState.drift.forecastHours);
-            const idx = Math.min(backTrack.length - 1, Math.max(0, Math.floor(pct * (backTrack.length - 1))));
-            const pt = backTrack[idx];
-
-            const beaconIcon = L.divIcon({
-                className: 'scrubber-beacon-wrapper',
-                html: `
-                    <div style="width:16px; height:16px; background:#f97316; border:2px solid #fff; border-radius:50%; box-shadow:0 0 12px #f97316; display:flex; align-items:center; justify-content:center;">
-                        <div style="width:4px; height:4px; background:#fff; border-radius:50%;"></div>
-                    </div>
-                `,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
-            });
-            mapLayers.scrubberTrackBeacon = L.marker(pt, { icon: beaconIcon })
-                .addTo(map)
-                .bindTooltip(`📍 Slick Lagrangian Position at T${hour}h<br>${pt[0].toFixed(3)}°N, ${pt[1].toFixed(3)}°E`, { sticky: true, className: 'mono' });
-        }
-    } else if (hour > 0) {
-        const fwdTrack = appState.drift.trajectoryForward;
-        if (fwdTrack && fwdTrack.length > 0) {
-            const pct = hour / Math.max(1, appState.drift.forecastHours);
-            const idx = Math.min(fwdTrack.length - 1, Math.max(0, Math.floor(pct * (fwdTrack.length - 1))));
-            const pt = fwdTrack[idx];
-
-            const beaconIcon = L.divIcon({
-                className: 'scrubber-beacon-wrapper',
-                html: `
-                    <div style="width:16px; height:16px; background:#0ea5e9; border:2px solid #fff; border-radius:50%; box-shadow:0 0 12px #0ea5e9; display:flex; align-items:center; justify-content:center;">
-                        <div style="width:4px; height:4px; background:#fff; border-radius:50%;"></div>
-                    </div>
-                `,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
-            });
-            mapLayers.scrubberTrackBeacon = L.marker(pt, { icon: beaconIcon })
-                .addTo(map)
-                .bindTooltip(`📍 Projected Slick Position at T+${hour}h<br>${pt[0].toFixed(3)}°N, ${pt[1].toFixed(3)}°E`, { sticky: true, className: 'mono' });
-        }
-    }
 }
 
 function initUpload() {
@@ -1541,10 +1104,10 @@ function resetUploadState() {
         step.textContent = step.textContent.replace(' ✓', '');
     });
 
+    DOM.results?.classList.add('hidden');
     DOM.pipeline?.classList.add('hidden');
-    DOM.results?.classList.remove('hidden');
-    DOM.driftPanel?.classList.remove('hidden');
-    DOM.vesselsPanel?.classList.remove('hidden');
+    DOM.driftPanel?.classList.add('hidden');
+    DOM.vesselsPanel?.classList.add('hidden');
 
     if (DOM.evidenceTimeline) {
         DOM.evidenceTimeline.innerHTML = '<div class="empty-state text-muted">Run detection analysis to populate evidence chain steps.</div>';
@@ -1770,17 +1333,7 @@ async function exportDossierReport() {
             DOM.btnExportTop.disabled = true;
         }
 
-        const payload = {
-            detection: appState.detection,
-            drift: appState.drift,
-            vessels: appState.vessels,
-            evidenceChain: appState.evidenceChain
-        };
-        const res = await fetch(`${CONFIG.API_BASE_URL}/investigations/${appState.dbId}/dossier/export`, { 
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const res = await fetch(`${CONFIG.API_BASE_URL}/investigations/${appState.dbId}/dossier/export`, { method: 'POST' });
         const json = await res.json();
 
         if (json.success && json.data.downloadUrl) {

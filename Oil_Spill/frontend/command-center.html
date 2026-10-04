@@ -98,34 +98,123 @@
 
                         <div id="leafletMap" class="leaflet-map-container"></div>
 
-
+                        <!-- Fallback mode if CDN fails -->
                         <div id="mapFallback" class="map-fallback hidden">
                             <div class="grid-overlay"></div>
                             <div class="fallback-message">Interactive Map Fallback Mode Active</div>
                         </div>
 
+                        <!-- Map Top Controls Bar: Quick Actions + North Indicator + Metocean Vectors -->
+                        <div class="map-top-bar">
+                            <div class="map-quick-actions">
+                                <div class="map-compass" title="True North Indicator">
+                                    <svg viewBox="0 0 24 24" width="16" height="16">
+                                        <polygon points="12,2 16,12 12,9" fill="#f97316"/>
+                                        <polygon points="12,2 8,12 12,9" fill="#ea580c"/>
+                                        <polygon points="12,22 16,12 12,9" fill="#475569"/>
+                                        <polygon points="12,22 8,12 12,9" fill="#334155"/>
+                                        <text x="12" y="7" font-size="5" font-weight="bold" fill="#fff" text-anchor="middle">N</text>
+                                    </svg>
+                                </div>
+                                <button class="map-btn" id="mapResetBtn">Reset View</button>
+                                <button class="map-btn" id="mapFitBoundsBtn">Fit Layers</button>
+                                <button class="map-btn" id="mapCenterSpillBtn" title="Center view on oil slick">Focus Slick</button>
+                            </div>
 
-                        <div class="map-layer-menu">
-                            <div class="layer-menu-title">Map Layers</div>
-                            <label><input type="checkbox" id="layerSpill" checked> Oil Slick</label>
-                            <label><input type="checkbox" id="layerOrigin" checked> Origin Zone</label>
-                            <label><input type="checkbox" id="layerBackDrift" checked> Back-Drift</label>
-                            <label><input type="checkbox" id="layerForwardDrift" checked> Forecast</label>
-                            <label><input type="checkbox" id="layerCone" checked> Uncertainty Cone</label>
-                            <label><input type="checkbox" id="layerVesselTracks" checked> Vessel Tracks</label>
-                            <label><input type="checkbox" id="layerVessels" checked> Candidate Vessels</label>
+                            <!-- Metocean Surface Drift Vector HUD -->
+                            <div class="map-metocean-hud" id="mapMetoceanHud" title="Live Metocean Drift Forcing Vectors">
+                                <div class="metocean-badge" id="hudWindBadge">
+                                    <span class="metocean-icon" id="hudWindArrow">↑</span>
+                                    <span class="metocean-label">WIND</span>
+                                    <span class="metocean-val mono" id="hudWindVal">045° 12kt</span>
+                                </div>
+                                <div class="metocean-badge" id="hudCurrentBadge">
+                                    <span class="metocean-icon" id="hudCurrentArrow">↑</span>
+                                    <span class="metocean-label">CURRENT</span>
+                                    <span class="metocean-val mono" id="hudCurrentVal">030° 0.8m/s</span>
+                                </div>
+                            </div>
                         </div>
 
-
-                        <div class="map-quick-actions">
-                            <button class="map-btn" id="mapResetBtn">Reset View</button>
-                            <button class="map-btn" id="mapFitBoundsBtn">Fit Layers</button>
+                        <!-- Map Layers Menu (Preserved) -->
+                        <div class="map-layer-menu" id="mapLayerMenu">
+                            <div class="layer-menu-header">
+                                <span class="layer-menu-title">Map Layers</span>
+                                <span class="layer-badge mono">7 Active</span>
+                            </div>
+                            <label><input type="checkbox" id="layerSpill" checked> <span class="layer-dot dot-slick"></span> Oil Slick</label>
+                            <label><input type="checkbox" id="layerOrigin" checked> <span class="layer-dot dot-origin"></span> Origin Zone</label>
+                            <label><input type="checkbox" id="layerBackDrift" checked> <span class="layer-dot dot-backdrift"></span> Back-Drift</label>
+                            <label><input type="checkbox" id="layerForwardDrift" checked> <span class="layer-dot dot-forecast"></span> Forecast</label>
+                            <label><input type="checkbox" id="layerCone" checked> <span class="layer-dot dot-cone"></span> Uncertainty Cone</label>
+                            <label><input type="checkbox" id="layerVesselTracks" checked> <span class="layer-dot dot-track"></span> Vessel Tracks</label>
+                            <label><input type="checkbox" id="layerVessels" checked> <span class="layer-dot dot-vessel"></span> Candidate Vessels</label>
                         </div>
 
+                        <!-- Collapsible Marine Investigation Legend -->
+                        <div class="map-legend-card" id="mapLegendCard">
+                            <button class="legend-toggle-btn" id="legendToggleBtn" aria-expanded="false" title="Toggle Map Legend">
+                                <span class="legend-icon">🗺️</span>
+                                <span class="legend-title">Legend</span>
+                                <span class="legend-chevron" id="legendChevron">▾</span>
+                            </button>
+                            <div class="legend-content hidden" id="legendBody">
+                                <div class="legend-grid">
+                                    <div class="legend-item">
+                                        <span class="legend-swatch swatch-slick-core"></span>
+                                        <span>Detected Slick (SAR)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-swatch swatch-slick-sheen"></span>
+                                        <span>Low Confidence Sheen</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-swatch swatch-origin"></span>
+                                        <span>Est. Origin Zone (90% CI)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-swatch swatch-backdrift"></span>
+                                        <span>Back-Drift (Past T-)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-swatch swatch-forecast"></span>
+                                        <span>Drift Forecast (Future T+)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-swatch swatch-cone"></span>
+                                        <span>Dispersion Uncertainty</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-swatch swatch-candidate"></span>
+                                        <span>Candidate Vessel (#1)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-swatch swatch-aisgap"></span>
+                                        <span>AIS Signal Gap / Target</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
+                        <!-- Live Coordinate & Sensor HUD Bar -->
+                        <div class="map-status-hud" id="mapStatusHud">
+                            <div class="hud-coords mono" id="hudCoordsDisplay">
+                                <span class="hud-tag">LOC</span>
+                                <span id="hudLatLonVal">19.0760°N, 72.8777°E</span>
+                            </div>
+                            <div class="hud-feeds mono">
+                                <span class="hud-dot live"></span>
+                                <span>SENTINEL-1 SAR • ERA5 • CMEMS • AIS TELEMETRY</span>
+                            </div>
+                        </div>
+
+                        <!-- Spill Timeline Kinematic Scrubber (Preserved) -->
                         <div class="time-scrubber-container" id="timeScrubberPanel">
                             <div class="scrubber-header">
-                                <span class="scrubber-title">Spill Timeline Kinematic Scrubber</span>
+                                <div class="scrubber-title-group">
+                                    <span class="scrubber-title">Spill Timeline Kinematic Scrubber</span>
+                                    <span class="scrubber-phase-badge" id="scrubberPhaseBadge">RECONSTRUCTION & FORECAST</span>
+                                </div>
                                 <span class="scrubber-value mono" id="scrubberTimeDisplay">T - 0h (Detection)</span>
                             </div>
                             <input type="range" class="time-slider" id="timeSlider" min="-72" max="72" value="0" step="1">
@@ -179,7 +268,7 @@
                             </div>
 
 
-                            <div class="detection-results hidden mt-4" id="detectionResults">
+                            <div class="detection-results mt-4" id="detectionResults">
                                 <div class="status-badge status-warning mb-4" id="detStatusBadge">Potential Oil Spill Detected</div>
 
                                 <div class="data-grid">
@@ -216,7 +305,7 @@
                     </div>
 
 
-                    <div class="panel hidden" id="drift">
+                    <div class="panel" id="drift">
                         <div class="panel-header">
                             <h3>Drift Reconstruction</h3>
                             <div class="toggle-switch">
@@ -282,7 +371,7 @@
             </div>
 
 
-            <div class="vessel-investigation hidden mt-6" id="vessels">
+            <div class="vessel-investigation mt-6" id="vessels">
                 <div class="panel">
                     <div class="panel-header">
                         <h3>AIS Vessel Correlation & Source Attribution</h3>

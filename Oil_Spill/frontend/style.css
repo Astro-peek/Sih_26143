@@ -565,10 +565,16 @@ button,
     height: 480px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-strong);
-    background: radial-gradient(circle at center, var(--bg-surface-elevated) 0%, var(--bg-surface) 100%);
+    background: radial-gradient(circle at center, #0a1424 0%, #030710 100%);
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+}
+
+.map-simulation {
+    position: relative;
+    width: 100%;
+    height: 100%;
 }
 
 .grid-overlay {
@@ -581,17 +587,61 @@ button,
     z-index: 1;
 }
 
+/* Radar Sweep Effect */
+.hero-radar-sweep {
+    position: absolute;
+    inset: -50%;
+    background: conic-gradient(from 0deg at 50% 50%, rgba(6, 182, 212, 0.12) 0deg, transparent 55deg, transparent 360deg);
+    animation: radarRotate 14s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes radarRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Organic Morphing / Breathing Oil Slick */
 .hero-spill {
     position: absolute;
     top: 55%;
     left: 25%;
-    width: 110px;
-    height: 65px;
-    background: rgba(234, 179, 8, 0.25);
-    border: 1px solid var(--status-warning);
-    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-    filter: blur(1px);
+    width: 125px;
+    height: 75px;
+    background: radial-gradient(circle at 45% 45%, rgba(202, 138, 4, 0.6), rgba(234, 179, 8, 0.25) 70%, transparent 95%);
+    border: 1.5px solid rgba(245, 158, 11, 0.85);
+    border-radius: 42% 58% 68% 32% / 45% 52% 62% 48%;
+    filter: blur(0.5px);
     z-index: 2;
+    animation: organicSlickBreath 7s ease-in-out infinite alternate;
+    box-shadow: 0 0 24px rgba(234, 179, 8, 0.22);
+}
+
+.spill-core-glow {
+    position: absolute;
+    inset: 18%;
+    background: rgba(180, 83, 9, 0.55);
+    border-radius: 50% 40% 60% 50%;
+    filter: blur(5px);
+}
+
+@keyframes organicSlickBreath {
+    0% {
+        transform: scale(1) rotate(0deg);
+        border-radius: 42% 58% 68% 32% / 45% 52% 62% 48%;
+        opacity: 0.88;
+    }
+    50% {
+        transform: scale(1.05) rotate(1.5deg);
+        border-radius: 52% 48% 62% 38% / 40% 58% 54% 52%;
+        opacity: 0.98;
+    }
+    100% {
+        transform: scale(0.97) rotate(-1.5deg);
+        border-radius: 38% 62% 72% 28% / 50% 46% 68% 42%;
+        opacity: 0.85;
+    }
 }
 
 .trajectory-line {
@@ -602,24 +652,169 @@ button,
     z-index: 3;
 }
 
-.hero-vessel {
+/* Flowing Cyan Drift Path */
+.hero-drift-path {
+    stroke-dasharray: 6, 4;
+    animation: driftDashFlow 12s linear infinite;
+}
+
+@keyframes driftDashFlow {
+    0% { stroke-dashoffset: 200; }
+    100% { stroke-dashoffset: 0; }
+}
+
+/* Sonar Ping Rings on Origin & Vessel Nodes */
+.hero-sonar-origin {
+    position: absolute;
+    top: 70%;
+    left: 20%;
+    width: 0;
+    height: 0;
+    z-index: 4;
+}
+
+.hero-sonar-vessel {
     position: absolute;
     top: 30%;
     left: 80%;
-    width: 12px;
-    height: 12px;
-    background: var(--accent-orange);
-    border: 2px solid #fff;
-    border-radius: 50%;
-    box-shadow: 0 0 10px var(--accent-orange-glow);
+    width: 0;
+    height: 0;
     z-index: 4;
+}
+
+.sonar-ring {
+    position: absolute;
+    top: -16px;
+    left: -16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent-orange);
+    animation: sonarPulse 3s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    pointer-events: none;
+}
+
+.ring-delayed {
+    animation-delay: 1.5s;
+}
+
+@keyframes sonarPulse {
+    0% {
+        transform: scale(0.25);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(2.8);
+        opacity: 0;
+    }
+}
+
+/* Traveling Vessel / Drift Beacon */
+.hero-traveling-beacon {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #06b6d4;
+    box-shadow: 0 0 14px #06b6d4, 0 0 4px #fff;
+    border: 2px solid #fff;
+    z-index: 5;
+    animation: moveAlongDrift 10s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes moveAlongDrift {
+    0% {
+        top: 70%;
+        left: 20%;
+        opacity: 0.4;
+        transform: scale(0.85);
+    }
+    15% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    50% {
+        top: 51%;
+        left: 45%;
+        background: #f59e0b;
+        box-shadow: 0 0 14px #f59e0b, 0 0 4px #fff;
+        transform: scale(1);
+    }
+    85% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    100% {
+        top: 30%;
+        left: 80%;
+        opacity: 0.4;
+        background: #06b6d4;
+        box-shadow: 0 0 14px #06b6d4, 0 0 4px #fff;
+        transform: scale(0.85);
+    }
+}
+
+/* Floating Micro-HUD Indicators */
+.hero-floating-hud {
+    position: absolute;
+    background: rgba(13, 20, 36, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 6;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+.hud-top-left {
+    top: var(--space-16);
+    left: var(--space-16);
+}
+
+.hud-slick-tag {
+    top: 48%;
+    left: 10%;
+    animation: hudFloat 4s ease-in-out infinite alternate;
+}
+
+.hud-target-tag {
+    top: 20%;
+    left: 66%;
+    animation: hudFloat 4s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes hudFloat {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-4px); }
+}
+
+.hud-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--status-success);
+    box-shadow: 0 0 6px var(--status-success);
+    display: inline-block;
+    animation: liveBlink 1.6s infinite ease-in-out;
+}
+
+@keyframes liveBlink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.8); }
 }
 
 .hero-latlon {
     position: absolute;
     bottom: var(--space-16);
     right: var(--space-16);
-    background: rgba(6, 10, 17, 0.85);
+    background: rgba(6, 10, 17, 0.92);
     border: 1px solid var(--border-subtle);
     padding: var(--space-4) var(--space-8);
     border-radius: var(--radius-sm);
@@ -627,6 +822,8 @@ button,
     font-size: 0.75rem;
     color: var(--text-muted);
     z-index: 5;
+    display: flex;
+    align-items: center;
 }
 
 .system-status {
@@ -955,88 +1152,359 @@ button,
     border-radius: var(--radius-sm);
 }
 
-.map-layer-menu {
+.map-top-bar {
     position: absolute;
-    top: var(--space-16);
-    right: var(--space-16);
-    background: rgba(15, 22, 36, 0.9);
+    top: var(--space-12);
+    left: 54px; /* clears standard Leaflet zoom control */
+    right: 210px;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+    gap: var(--space-8);
+}
+
+.map-quick-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: auto;
+}
+
+.map-compass {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(15, 22, 36, 0.92);
     backdrop-filter: blur(8px);
     border: 1px solid var(--border-strong);
-    padding: var(--space-12) var(--space-16);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+}
+
+.map-btn {
+    background: rgba(15, 22, 36, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-strong);
+    color: var(--text-secondary);
+    padding: 5px 11px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.map-btn:hover {
+    background: var(--bg-surface-hover);
+    color: #fff;
+    border-color: var(--accent-teal);
+}
+
+/* Metocean Surface Vectors HUD */
+.map-metocean-hud {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: auto;
+}
+
+.metocean-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(15, 22, 36, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 4px 9px;
+    font-size: 0.72rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.metocean-icon {
+    display: inline-block;
+    color: var(--accent-teal);
+    font-weight: bold;
+    font-size: 0.85rem;
+    transition: transform 0.4s ease-out;
+}
+
+#hudCurrentArrow {
+    color: var(--accent-orange);
+}
+
+.metocean-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+}
+
+.metocean-val {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Map Layer Menu */
+.map-layer-menu {
+    position: absolute;
+    top: var(--space-12);
+    right: var(--space-12);
+    background: rgba(13, 20, 36, 0.94);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-strong);
+    padding: var(--space-12) 14px;
     border-radius: var(--radius-sm);
     z-index: 500;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--text-secondary);
+    min-width: 175px;
+    box-shadow: var(--shadow-md);
+}
+
+.layer-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .layer-menu-title {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-family: var(--font-mono);
     color: var(--text-muted);
     text-transform: uppercase;
-    margin-bottom: 2px;
+    letter-spacing: 0.05em;
+}
+
+.layer-badge {
+    font-size: 0.65rem;
+    color: var(--accent-teal);
+    background: rgba(6, 182, 212, 0.12);
+    padding: 1px 5px;
+    border-radius: 4px;
 }
 
 .map-layer-menu label {
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
+    padding: 2px 0;
+    transition: color 0.15s ease;
 }
 
-.map-quick-actions {
-    position: absolute;
-    top: var(--space-16);
-    left: 50px;
-
-    z-index: 500;
-    display: flex;
-    gap: 8px;
-}
-
-.map-btn {
-    background: rgba(15, 22, 36, 0.9);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--border-strong);
-    color: var(--text-secondary);
-    padding: 4px 12px;
-    font-size: 0.75rem;
-    border-radius: var(--radius-sm);
-}
-
-.map-btn:hover {
-    background: var(--bg-surface-hover);
+.map-layer-menu label:hover {
     color: #fff;
 }
 
-.time-scrubber-container {
+.layer-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.dot-slick { background: #eab308; box-shadow: 0 0 6px rgba(234, 179, 8, 0.6); }
+.dot-origin { background: #f97316; box-shadow: 0 0 6px rgba(249, 115, 22, 0.6); }
+.dot-backdrift { background: #ea580c; border: 1px dashed #fff; }
+.dot-forecast { background: #0ea5e9; box-shadow: 0 0 6px rgba(14, 165, 233, 0.6); }
+.dot-cone { background: rgba(249, 115, 22, 0.35); border: 1px solid #f97316; }
+.dot-track { background: #64748b; }
+.dot-vessel { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.6); }
+
+/* Collapsible Marine Investigation Legend */
+.map-legend-card {
     position: absolute;
-    bottom: var(--space-16);
+    bottom: 84px;
+    right: var(--space-12);
+    z-index: 500;
+    background: rgba(13, 20, 36, 0.94);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    max-width: 280px;
+    font-size: 0.74rem;
+}
+
+.legend-toggle-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    font-size: 0.74rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--font-sans);
+}
+
+.legend-toggle-btn:hover {
+    color: #fff;
+}
+
+.legend-chevron {
+    transition: transform 0.2s ease;
+    font-size: 0.8rem;
+}
+
+.legend-chevron.open {
+    transform: rotate(180deg);
+}
+
+.legend-content {
+    padding: 8px 12px 10px 12px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.legend-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+}
+
+.legend-swatch {
+    width: 14px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.swatch-slick-core { background: #ca8a04; border: 1px solid #f59e0b; }
+.swatch-slick-sheen { background: rgba(234, 179, 8, 0.25); border: 1px dashed #eab308; }
+.swatch-origin { background: rgba(249, 115, 22, 0.25); border: 1px dashed #f97316; }
+.swatch-backdrift { background: #f97316; height: 3px; border-radius: 1px; }
+.swatch-forecast { background: #0ea5e9; height: 3px; border-radius: 1px; }
+.swatch-cone { background: rgba(249, 115, 22, 0.12); border: 1px dotted #f97316; }
+.swatch-candidate { background: #f97316; width: 10px; height: 10px; border-radius: 50%; border: 1px solid #fff; }
+.swatch-aisgap { background: #ef4444; width: 10px; height: 10px; border-radius: 2px; border: 1px dashed #fff; }
+
+/* Live Coordinate & Sensor HUD Bar */
+.map-status-hud {
+    position: absolute;
+    bottom: 84px;
     left: var(--space-16);
-    right: var(--space-16);
-    background: rgba(15, 22, 36, 0.92);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    pointer-events: none;
+}
+
+.hud-coords {
+    background: rgba(13, 20, 36, 0.88);
     backdrop-filter: blur(8px);
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
-    padding: var(--space-12) var(--space-16);
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: var(--shadow-sm);
+}
+
+.hud-tag {
+    color: var(--accent-teal);
+    font-weight: 700;
+    font-size: 0.65rem;
+}
+
+.hud-feeds {
+    background: rgba(13, 20, 36, 0.88);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 3px 10px;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: var(--shadow-sm);
+}
+
+.hud-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.hud-dot.live {
+    background: var(--status-success);
+    box-shadow: 0 0 6px var(--status-success);
+}
+
+/* Time Scrubber Container Enhancements */
+.time-scrubber-container {
+    position: absolute;
+    bottom: var(--space-12);
+    left: var(--space-12);
+    right: var(--space-12);
+    background: rgba(13, 20, 36, 0.94);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 9px 14px 10px 14px;
     z-index: 500;
+    box-shadow: var(--shadow-md);
 }
 
 .scrubber-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: var(--space-8);
-    font-size: 0.85rem;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+}
+
+.scrubber-title-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
 }
 
 .scrubber-title {
     color: var(--text-secondary);
     font-weight: 500;
     text-transform: uppercase;
-    font-size: 0.75rem;
+    font-size: 0.74rem;
+    letter-spacing: 0.03em;
+}
+
+.scrubber-phase-badge {
+    font-size: 0.62rem;
+    font-family: var(--font-mono);
+    color: var(--accent-teal);
+    background: rgba(6, 182, 212, 0.12);
+    padding: 1px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
 }
 
 .scrubber-value {
@@ -1071,6 +1539,220 @@ button,
     font-size: 0.7rem;
     color: var(--text-muted);
     margin-top: 6px;
+}
+
+/* Custom Leaflet Controls Styling */
+.leaflet-control-zoom {
+    border: 1px solid var(--border-strong) !important;
+    border-radius: var(--radius-sm) !important;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.leaflet-control-zoom a {
+    background-color: rgba(13, 20, 36, 0.92) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 26px !important;
+    font-size: 15px !important;
+    transition: var(--transition);
+}
+
+.leaflet-control-zoom a:hover {
+    background-color: var(--bg-surface-hover) !important;
+    color: var(--accent-teal) !important;
+}
+
+.leaflet-control-scale-line {
+    background: rgba(13, 20, 36, 0.88) !important;
+    border: 1px solid var(--border-strong) !important;
+    border-top: none !important;
+    color: var(--text-secondary) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+    border-radius: 0 0 3px 3px;
+    box-shadow: var(--shadow-sm);
+}
+
+.leaflet-tooltip {
+    background: rgba(13, 20, 36, 0.94) !important;
+    border: 1px solid var(--border-strong) !important;
+    color: var(--text-primary) !important;
+    border-radius: 4px !important;
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+.leaflet-tooltip-top:before { border-top-color: rgba(13, 20, 36, 0.94) !important; }
+.leaflet-tooltip-bottom:before { border-bottom-color: rgba(13, 20, 36, 0.94) !important; }
+.leaflet-tooltip-left:before { border-left-color: rgba(13, 20, 36, 0.94) !important; }
+.leaflet-tooltip-right:before { border-right-color: rgba(13, 20, 36, 0.94) !important; }
+
+/* Tactical Maritime Popup Styling */
+.marine-popup {
+    min-width: 230px;
+    font-family: var(--font-sans);
+    line-height: 1.4;
+    padding: 2px;
+}
+
+.marine-popup .popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.marine-popup .popup-tag {
+    font-size: 0.62rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.popup-tag.tag-warning {
+    color: var(--status-warning);
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.popup-tag.tag-origin {
+    color: var(--accent-orange);
+    background: rgba(249, 115, 22, 0.15);
+}
+
+.popup-tag.tag-teal {
+    color: var(--accent-teal);
+    background: rgba(6, 182, 212, 0.15);
+}
+
+.popup-tag.tag-danger {
+    color: var(--status-danger);
+    background: rgba(244, 63, 94, 0.15);
+}
+
+.marine-popup .popup-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.marine-popup .popup-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 3px 8px;
+    font-size: 0.74rem;
+}
+
+.marine-popup .popup-grid .label {
+    color: var(--text-muted);
+}
+
+.marine-popup .popup-grid .val {
+    color: var(--text-primary);
+    text-align: right;
+}
+
+/* Tactical Vessel Markers */
+.tactical-vessel-marker {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.tactical-vessel-marker:hover {
+    transform: scale(1.2);
+    z-index: 1000 !important;
+}
+
+.vessel-ship-icon {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+    transition: transform 0.3s ease;
+}
+
+.top-candidate-badge {
+    position: absolute;
+    top: -9px;
+    right: -11px;
+    background: #f97316;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #fff;
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.8);
+}
+
+.ais-anomaly-icon {
+    position: absolute;
+    top: -8px;
+    right: -9px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 9px;
+    font-weight: bold;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #fff;
+    animation: gapPulse 2s infinite ease-in-out;
+}
+
+@keyframes gapPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.8; }
+}
+
+/* Waypoint Markers on Drift Trajectories */
+.drift-waypoint-marker {
+    background: rgba(13, 20, 36, 0.92);
+    border: 1px solid #f97316;
+    color: #f97316;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+.drift-waypoint-forecast {
+    border-color: #0ea5e9;
+    color: #0ea5e9;
+}
+
+/* Target Area Ping Animation */
+.investigation-target-ring {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--accent-teal);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent-teal-glow);
+    animation: targetPingOnce 1.5s ease-out 1;
+}
+
+@keyframes targetPingOnce {
+    0% { transform: scale(0.4); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0.15; }
 }
 
 .dashboard-sidebar {
@@ -1598,6 +2280,14 @@ button,
     .workflow-grid {
         grid-template-columns: repeat(3, 1fr);
     }
+
+    .map-top-bar {
+        right: 180px;
+    }
+
+    .hud-feeds {
+        display: none;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1654,6 +2344,47 @@ button,
         grid-template-columns: 1fr;
         text-align: center;
     }
+
+    .map-top-bar {
+        left: 48px;
+        right: 10px;
+        flex-wrap: wrap;
+        top: 8px;
+    }
+
+    .map-metocean-hud {
+        display: none;
+    }
+
+    .map-layer-menu {
+        top: 48px;
+        right: 8px;
+        padding: 8px 10px;
+        min-width: 140px;
+        font-size: 0.72rem;
+    }
+
+    .map-legend-card {
+        bottom: 74px;
+        right: 8px;
+        max-width: 200px;
+    }
+
+    .map-status-hud {
+        bottom: 74px;
+        left: 8px;
+    }
+
+    .time-scrubber-container {
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        padding: 6px 10px;
+    }
+
+    .scrubber-phase-badge {
+        display: none;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1667,5 +2398,9 @@ button,
 
     .vessel-table-wrapper {
         overflow-x: auto;
+    }
+
+    .map-quick-actions button:not(#mapResetBtn) {
+        display: none;
     }
 }
