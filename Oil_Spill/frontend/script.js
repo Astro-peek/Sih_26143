@@ -196,12 +196,18 @@ function initDOM() {
 document?.addEventListener('DOMContentLoaded', async () => {
     initDOM();
     
+    // Reset processing state on page load to prevent stuck buttons
+    appState.isProcessing = false;
+    
     const saved = localStorage.getItem('oceanTraceApp');
     if (saved) {
         try {
             Object.assign(appState, JSON.parse(saved));
         } catch (e) { console.warn('State restore failed:', e); }
     }
+    
+    // Ensure processing state is reset after loading saved state
+    appState.isProcessing = false;
 
     // Update nav ID on all pages
     const navId = document.getElementById('navInvestigationId');
