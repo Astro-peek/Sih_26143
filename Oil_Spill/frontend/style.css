@@ -2404,3 +2404,685 @@ button,
         display: none;
     }
 }
+
+
+/* ================================================================
+   DASHBOARD REDESIGN — Command Center 100vh Shell
+   All classes prefixed .cc-* to avoid leaking into other pages.
+   Typography scale: base 13px, labels 11px, headings 14-15px.
+   ================================================================ */
+
+/* ---- CSS variables for the dashboard scale (Scaled 90% to match requested density) ---- */
+:root {
+    --cc-base-size: 11.7px;
+    --cc-label-size: 10px;
+    --cc-heading-size: 12.6px;
+    --cc-heading-lg-size: 13.5px;
+    --cc-card-pad: 10.8px;
+    --cc-gap-sm: 5.4px;
+    --cc-gap-md: 9px;
+    --cc-gap-lg: 12.6px;
+    --cc-sidebar-width: 342px;
+    --cc-navbar-h: 39.6px;
+    --cc-status-h: 28.8px;
+    --cc-scrubber-h: 57.6px;
+    --cc-transition: 160ms ease;
+    --cc-scrollbar-color: rgba(6, 182, 212, 0.25);
+    --cc-scrollbar-track: rgba(255,255,255,0.04);
+}
+
+/* Apply a 90% (14.4px) baseline font-size to scale all native REM units only on the CC page */
+html:has(body.cc-body) {
+    font-size: 14.4px;
+}
+
+/* ---- Body override for CC page ---- */
+body.cc-body {
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* ---- Slim navbar for CC ---- */
+.cc-navbar .nav-container {
+    padding: 6px var(--space-24);
+}
+
+/* ---- Compact system status bar ---- */
+.cc-status-bar .status-container {
+    padding: 4px var(--space-24);
+    gap: var(--space-8);
+}
+.cc-status-bar .status-item {
+    font-size: 0.7rem;
+}
+
+/* ---- 100vh page shell ---- */
+.cc-page-shell {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: row;
+    /* Push below the navbar; system-status is hidden on CC page */
+    padding-top: var(--cc-navbar-h);
+    background: var(--bg-base);
+    z-index: 1;
+}
+
+/* ---- Map area: fills remaining width ---- */
+.cc-map-area {
+    flex: 1 1 0%;
+    min-width: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Override existing map-wrapper heights so they fill parent */
+.cc-map-area .interactive-map-wrapper,
+.cc-map-area .leaflet-map-container {
+    min-height: unset !important;
+}
+
+/* ---- Slimmer scrubber ---- */
+.cc-scrubber-slim {
+    padding: 6px 12px 8px 12px !important;
+}
+
+/* ---- RIGHT SIDEBAR ---- */
+.cc-sidebar {
+    width: var(--cc-sidebar-width);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: rgba(6, 10, 17, 0.97);
+    border-left: 1px solid var(--border-strong);
+    overflow: hidden;
+    font-size: var(--cc-base-size);
+    position: relative;
+    z-index: 10;
+}
+
+/* Thin custom scrollbar */
+.cc-sidebar ::-webkit-scrollbar {
+    width: 4px;
+}
+.cc-sidebar ::-webkit-scrollbar-track {
+    background: var(--cc-scrollbar-track);
+}
+.cc-sidebar ::-webkit-scrollbar-thumb {
+    background: var(--cc-scrollbar-color);
+    border-radius: 2px;
+}
+
+/* ---- Sidebar sticky header ---- */
+.cc-sidebar-header {
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-strong);
+    background: rgba(6, 10, 17, 0.99);
+    padding: var(--cc-card-pad);
+    display: flex;
+    flex-direction: column;
+    gap: var(--cc-gap-sm);
+}
+
+.cc-sidebar-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cc-sidebar-label {
+    font-size: var(--cc-heading-size);
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.02em;
+}
+
+.cc-sidebar-actions {
+    display: flex;
+    gap: var(--cc-gap-sm);
+}
+
+/* Compact button style for sidebar */
+.cc-btn-sm {
+    padding: 5px 10px !important;
+    font-size: var(--cc-label-size) !important;
+    height: 28px;
+    line-height: 1;
+}
+
+/* ---- Compact coordinate input strip ---- */
+.cc-input-compact {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--cc-gap-sm);
+    flex-wrap: wrap;
+}
+
+.cc-coord-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cc-coord-group label {
+    font-size: var(--cc-label-size);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.cc-coord-input {
+    width: 100px !important;
+    padding: 4px 8px !important;
+    font-size: var(--cc-label-size) !important;
+}
+
+.cc-demo-link {
+    font-size: var(--cc-label-size);
+    color: var(--accent-teal) !important;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    align-self: flex-end;
+    margin-bottom: 2px;
+}
+
+/* ---- Scrollable sidebar content area ---- */
+.cc-sidebar-content {
+    flex: 1 1 0%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* ------ Detection panel overrides ------ */
+.cc-detect-zone {
+    border-radius: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    border-top: 0 !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    box-shadow: none !important;
+}
+
+.cc-detect-zone:hover {
+    box-shadow: none !important;
+    border-color: var(--border-subtle) !important;
+}
+
+.cc-panel-header-sm {
+    padding: var(--cc-card-pad) !important;
+}
+
+.cc-panel-header-sm h3 {
+    font-size: var(--cc-heading-size) !important;
+    margin: 0 !important;
+}
+
+.cc-panel-content-sm {
+    padding: var(--cc-card-pad) !important;
+}
+
+.cc-run-btn {
+    font-size: var(--cc-label-size) !important;
+    padding: 7px 12px !important;
+    height: 32px !important;
+    margin-top: var(--cc-gap-md) !important;
+}
+
+/* Upload zone compact */
+.cc-detect-zone .upload-zone {
+    padding: 12px 10px !important;
+}
+
+.cc-detect-zone .upload-icon {
+    font-size: 1.1rem !important;
+    margin-bottom: 4px !important;
+}
+
+.cc-detect-zone .preview-area img {
+    max-height: 100px !important;
+}
+
+/* ---- Pipeline accordion ---- */
+.cc-pipeline-accordion {
+    margin-top: var(--cc-gap-md);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.cc-pipeline-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-surface-elevated);
+    border: none;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    font-size: var(--cc-label-size);
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: background var(--cc-transition);
+}
+
+.cc-pipeline-toggle:hover {
+    background: var(--bg-surface-hover);
+    color: #fff;
+}
+
+.cc-pipeline-status-text {
+    font-weight: 500;
+}
+
+.cc-pipeline-chevron {
+    font-size: 0.72rem;
+    transition: transform var(--cc-transition);
+}
+
+.cc-pipeline-accordion.open .cc-pipeline-chevron {
+    transform: rotate(180deg);
+}
+
+.cc-pipeline-steps {
+    border-top: 1px solid var(--border-subtle);
+}
+
+.cc-pipeline-steps .processing-pipeline {
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: 0;
+}
+
+.cc-pipeline-steps .pipeline-step {
+    font-size: var(--cc-label-size) !important;
+    padding: 2px 0 !important;
+}
+
+/* ---- Summary card ---- */
+.cc-results-shell {
+    display: flex;
+    flex-direction: column;
+    animation: ccFadeIn 200ms ease;
+}
+
+@keyframes ccFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.cc-summary-card {
+    padding: var(--cc-card-pad);
+    border-bottom: 1px solid var(--border-subtle);
+    background: linear-gradient(180deg, rgba(6, 182, 212, 0.04) 0%, transparent 100%);
+}
+
+.cc-status-badge-compact {
+    font-size: var(--cc-label-size) !important;
+    padding: 4px 8px !important;
+    margin-bottom: var(--cc-gap-md);
+}
+
+.cc-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--cc-gap-sm);
+}
+
+.cc-stat-hero {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(245, 158, 11, 0.06);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: var(--radius-sm);
+}
+
+.cc-stat-hero-num {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.cc-stat-hero-label {
+    font-size: var(--cc-label-size);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cc-stat-item {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 6px 8px;
+}
+
+.cc-stat-label {
+    font-size: var(--cc-label-size);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 2px;
+}
+
+.cc-stat-val {
+    font-size: var(--cc-label-size);
+    color: var(--text-primary);
+    font-weight: 500;
+    word-break: break-all;
+}
+
+/* ---- Tab bar ---- */
+.cc-tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border-strong);
+    background: rgba(6, 10, 17, 0.8);
+    flex-shrink: 0;
+}
+
+.cc-tab-btn {
+    flex: 1 1 0%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    padding: 8px 4px;
+    font-size: var(--cc-label-size);
+    font-weight: 500;
+    cursor: pointer;
+    transition: color var(--cc-transition), border-color var(--cc-transition), background var(--cc-transition);
+    letter-spacing: 0.02em;
+    font-family: var(--font-sans);
+}
+
+.cc-tab-btn:hover {
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.03);
+}
+
+.cc-tab-btn.active {
+    color: var(--accent-teal);
+    border-bottom-color: var(--accent-teal);
+    background: rgba(6, 182, 212, 0.04);
+}
+
+/* ---- Tab panels ---- */
+.cc-tab-panel {
+    display: none;
+    padding: var(--cc-card-pad);
+    flex-direction: column;
+    gap: var(--cc-gap-md);
+    animation: ccFadeIn 160ms ease;
+}
+
+.cc-tab-panel.active {
+    display: flex;
+}
+
+/* Override heading sizes inside panels */
+.cc-tab-panel h4 {
+    font-size: var(--cc-heading-size);
+    margin-bottom: var(--cc-gap-sm);
+}
+.cc-tab-panel h5 {
+    font-size: var(--cc-label-size);
+    margin-bottom: 4px;
+}
+.cc-tab-panel .analysis-list li {
+    font-size: var(--cc-label-size);
+    margin-bottom: 3px;
+}
+
+/* Drift tab internal layout */
+.cc-drift-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--cc-gap-md);
+}
+
+.cc-section-label {
+    font-size: var(--cc-heading-size);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Compact sliders */
+.cc-tab-panel .slider-group label {
+    font-size: var(--cc-label-size);
+}
+.cc-tab-panel .slider-group .mono {
+    font-size: var(--cc-label-size);
+}
+
+.cc-tab-panel .data-grid {
+    font-size: var(--cc-label-size);
+}
+
+/* ---- Drift panel ID: used by JS, now inside tab ---- */
+#drift {
+    /* Remove existing panel chrome since it's inside a tab panel */
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+#drift:hover {
+    box-shadow: none !important;
+    border: none !important;
+}
+#drift .panel-content {
+    display: none; /* content is re-exposed directly since we flattened structure */
+}
+
+/* ---- Vessels panel inside tab ---- */
+.vessel-investigation {
+    margin: 0 !important;
+}
+.vessel-investigation .panel {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+.vessel-investigation .panel:hover {
+    box-shadow: none !important;
+    border: none !important;
+}
+.vessel-investigation .panel-header {
+    display: none; /* title shown in tab label */
+}
+
+.cc-table-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+}
+
+/* Compact vessel table */
+.cc-tab-panel .vessel-table th,
+.cc-tab-panel .vessel-table td {
+    padding: 6px 6px !important;
+    font-size: var(--cc-label-size) !important;
+}
+
+/* Show-all button */
+.cc-show-all-btn {
+    width: 100%;
+    margin-top: var(--cc-gap-sm);
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    padding: 5px 0;
+    font-size: var(--cc-label-size);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color var(--cc-transition), background var(--cc-transition);
+}
+.cc-show-all-btn:hover {
+    color: #fff;
+    background: var(--bg-surface-hover);
+}
+
+/* ---- Inline vessel detail ---- */
+.cc-vessel-detail-inline {
+    margin-top: var(--cc-gap-md);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: var(--cc-card-pad);
+    background: var(--bg-base);
+    animation: ccFadeIn 160ms ease;
+}
+
+.cc-vessel-detail-inline .empty-state {
+    font-size: var(--cc-label-size);
+    padding: 10px 0;
+}
+
+.cc-detail-header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: var(--cc-gap-sm);
+    margin-bottom: var(--cc-gap-sm);
+}
+
+.cc-detail-header h4 {
+    font-size: var(--cc-heading-size);
+    color: var(--accent-teal);
+    margin-bottom: 2px;
+}
+
+.cc-vessel-detail-inline .propagation-chain {
+    font-size: var(--cc-label-size) !important;
+    padding: 6px 8px !important;
+}
+
+/* ---- What-if tab ---- */
+.cc-tab-panel .what-if-box {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+.cc-tab-panel .what-if-box h4 {
+    color: var(--text-secondary);
+    font-size: var(--cc-label-size);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--cc-gap-sm);
+}
+
+.cc-tab-panel .robustness-result {
+    font-size: var(--cc-label-size) !important;
+    padding: 6px 8px;
+    background: var(--bg-surface-elevated);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+}
+
+/* ---- analysis-box inside Evidence tab ---- */
+.cc-tab-panel .analysis-box {
+    padding: 10px !important;
+}
+.cc-tab-panel .analysis-box h4 {
+    font-size: var(--cc-label-size);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+
+/* ======================================================
+   RESPONSIVE BREAKPOINTS
+   ====================================================== */
+
+/* 1280px + : map + sidebar side by side (default above) */
+
+/* 768px – 1279px : narrower sidebar */
+@media (max-width: 1279px) and (min-width: 768px) {
+    :root {
+        --cc-sidebar-width: 320px;
+    }
+}
+
+/* < 768px : map on top (45vh), sidebar below as scrollable tabs */
+@media (max-width: 767px) {
+    body.cc-body {
+        overflow: auto;
+        height: auto;
+    }
+
+    .cc-page-shell {
+        position: static;
+        flex-direction: column;
+        padding-top: 0;
+        height: auto;
+    }
+
+    .cc-map-area {
+        height: 45vh;
+        flex-shrink: 0;
+    }
+
+    .cc-map-area .interactive-map-wrapper {
+        height: 45vh !important;
+    }
+    .cc-map-area .leaflet-map-container {
+        height: 45vh !important;
+    }
+
+    .cc-sidebar {
+        width: 100%;
+        height: auto;
+        overflow: visible;
+        border-left: none;
+        border-top: 1px solid var(--border-strong);
+    }
+
+    .cc-sidebar-content {
+        overflow: visible;
+    }
+
+    /* Sticky tab bar on mobile */
+    .cc-tab-bar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+
+    .cc-input-compact {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cc-coord-input {
+        width: 100% !important;
+    }
+
+    .cc-stat-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Extra adjustments for very small screens */
+@media (max-width: 480px) {
+    :root {
+        --cc-sidebar-width: 100%;
+    }
+
+    .cc-stat-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cc-stat-hero {
+        grid-column: 1 / -1;
+    }
+}

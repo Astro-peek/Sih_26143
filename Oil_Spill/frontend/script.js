@@ -1856,3 +1856,146 @@ function debouncedPatch(payload) {
         } catch (e) { console.error('Patch error', e); }
     }, 500);
 }
+
+/* ================================================================
+   DASHBOARD REDESIGN — Purely Presentational JS
+   Controls visual state only (tabs, accordion, show-all).
+   map.invalidateSize() called after every layout change.
+   ================================================================ */
+
+(function initDashboardUI() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', _init);
+    } else {
+        _init();
+    }
+
+    function _invalidateMap() {
+        setTimeout(function () {
+            if (window.map && typeof window.map.invalidateSize === 'function') {
+                window.map.invalidateSize({ animate: false });
+            }
+        }, 180);
+    }
+
+    function _init() {
+        if (!document.getElementById('ccPageShell')) return;
+
+        // ---- Tab Switcher ----
+        var tabBtns = document.querySelectorAll('.cc-tab-btn');
+        var tabPanels = document.querySelectorAll('.cc-tab-panel');
+
+        tabBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var targetTab = btn.dataset.tab;
+                tabBtns.forEach(function (b) { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+                tabPanels.forEach(function (p) { p.classList.remove('active'); });
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+                var target = document.querySelector('.cc-tab-panel[data-panel="' + targetTab + '"]');
+                if (target) target.classList.add('active');
+                _invalidateMap();
+            });
+        });
+
+        // ---- Pipeline Accordion ----
+        var pipelineEl = document.getElementById('processingPipeline');
+        var accordionEl = document.getElementById('processingPipelineAccordion');
+        var toggleBtn = document.getElementById('ccPipelineToggleBtn');
+        var stepsBody = document.getElementById('ccPipelineStepsBody');
+        var statusText = document.getElementById('ccPipelineStatusText');
+
+        if (pipelineEl && accordionEl && toggleBtn && stepsBody) {
+            // Watch #processingPipeline for .hidden removal (JS removes it when analysis starts)
+            new MutationObserver(function () {
+                if (!pipelineEl.classList.contains('hidden')) {
+                    accordionEl.classList.remove('hidden');
+                    accordionEl.classList.add('open');
+                    stepsBody.classList.remove('hidden');
+                    toggleBtn.setAttribute('aria-expanded', 'true');
+                    if (statusText) statusText.textContent = 'Processing\u2026';
+                } else {
+                    accordionEl.classList.add('hidden');
+                }
+            }).observe(pipelineEl, { attributes: true, attributeFilter: ['class'] });
+
+            // Watch steps for completion
+            new MutationObserver(function () {
+                var steps = pipelineEl.querySelectorAll('.pipeline-step');
+                var done = pipelineEl.querySelectorAll('.pipeline-step.done').length;
+                var total = steps.length;
+                if (statusText && done === total && total > 0) {
+                    statusText.textContent = total + '/' + total + ' steps complete \u2713';
+                    accordionEl.classList.remove('open');
+                    stepsBody.classList.add('hidden');
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                } else if (statusText && done > 0) {
+                    statusText.textContent = done + '/' + total + ' steps\u2026';
+                }
+            }).observe(pipelineEl, { subtree: true, attributes: true, attributeFilter: ['class'] });
+
+            toggleBtn.addEventListener('click', function () {
+                var isOpen = accordionEl.classList.contains('open');
+                if (isOpen) {
+                    accordionEl.classList.remove('open');
+                    stepsBody.classList.add('hidden');
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                } else {
+                    accordionEl.classList.add('open');
+                    stepsBody.classList.remove('hidden');
+                    toggleBtn.setAttribute('aria-expanded', 'true');
+                }
+            });
+        }
+
+        // ---- Results shell visibility (follows #detectionResults) ----
+        var detectionResults = document.getElementById('detectionResults');
+        var resultsShell = document.getElementById('ccResultsShell');
+
+        if (detectionResults && resultsShell) {
+            new MutationObserver(function () {
+                if (!detectionResults.classList.contains('hidden')) {
+                    resultsShell.classList.remove('hidden');
+                    var evidenceBtn = document.getElementById('ccTabBtnEvidence');
+                    if (evidenceBtn && !evidenceBtn.classList.contains('active')) evidenceBtn.click();
+                    _invalidateMap();
+                }
+            }).observe(detectionResults, { attributes: true, attributeFilter: ['class'] });
+        }
+
+        // ---- Show-all Vessels Toggle ----
+        var showAllBtn = document.getElementById('ccShowAllVesselsBtn');
+        var vesselTbody = document.querySelector('#vesselTable tbody');
+        var showingAll = false;
+
+        function enforceVesselLimit() {
+            if (!vesselTbody || !showAllBtn) return;
+            var rows = vesselTbody.querySelectorAll('tr');
+            if (rows.length <= 5) { showAllBtn.classList.add('hidden'); return; }
+            showAllBtn.classList.remove('hidden');
+            if (!showingAll) {
+                rows.forEach(function (r, i) { r.style.display = i < 5 ? '' : 'none'; });
+                showAllBtn.textContent = 'Show all ' + rows.length + ' vessels \u25be';
+            } else {
+                rows.forEach(function (r) { r.style.display = ''; });
+                showAllBtn.textContent = 'Show fewer \u25b4';
+            }
+        }
+
+        if (vesselTbody) {
+            new MutationObserver(enforceVesselLimit).observe(vesselTbody, { childList: true });
+            // When a row is clicked, ensure Vessels tab is active so detail is visible
+            vesselTbody.addEventListener('click', function () {
+                var vBtn = document.getElementById('ccTabBtnVessels');
+                if (vBtn && !vBtn.classList.contains('active')) vBtn.click();
+            });
+        }
+
+        if (showAllBtn) {
+            showAllBtn.addEventListener('click', function () { showingAll = !showingAll; enforceVesselLimit(); });
+        }
+
+        // ---- invalidateSize on resize ----
+        window.addEventListener('resize', _invalidateMap);
+    }
+})();

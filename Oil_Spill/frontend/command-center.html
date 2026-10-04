@@ -4,22 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OceanTrace | Command Center</title>
-    <meta name="description" content="AI-Powered Marine Oil Spill Detection & Vessel Attribution by OceanSentinel (SIH 2026 - Problem Statement 26143)">
-
+    <meta name="description" content="AI-Powered Marine Oil Spill Detection &amp; Vessel Attribution by OceanSentinel (SIH 2026 - Problem Statement 26143)">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-
 
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="cc-body">
 
-    <nav class="navbar" id="navbar">
+    <nav class="navbar cc-navbar" id="navbar">
         <div class="nav-container">
             <div class="brand">
                 <span class="brand-name">OceanTrace</span>
@@ -49,8 +46,8 @@
         </div>
     </nav>
 
-
-    <section class="system-status">
+    <!-- System status bar preserved but hidden on CC page via CSS to reclaim height -->
+    <section class="system-status cc-status-bar" id="ccStatusBar">
         <div class="status-container">
             <div class="status-item"><span class="status-label">SYSTEM</span> <span class="status-value highlight-warning">Demo Environment</span></div>
             <div class="status-item"><span class="status-label">SATELLITE</span> <span class="status-value">Sentinel-1 SAR C-Band</span></div>
@@ -61,261 +58,276 @@
         </div>
     </section>
 
+    <!-- ======================================================== -->
+    <!-- CC DASHBOARD PAGE SHELL — 100vh fixed layout             -->
+    <!-- ======================================================== -->
+    <div class="cc-page-shell" id="ccPageShell">
 
-    <section class="command-center" id="command-center">
-        <div class="section-container wide">
-            <div class="dashboard-header">
-                <div>
-                    <h2 class="section-title">Incident Command Center</h2>
-                    <p class="text-secondary text-sm mt-1">Interactive Marine Intelligence Operations & Spill Attribution Dashboard</p>
+        <!-- ---- LEFT: MAP AREA ---- -->
+        <div class="cc-map-area" id="ccMapArea">
+            <!-- Reuse existing section wrapper but as a full-height map column -->
+            <div class="interactive-map-wrapper" style="height:100%;min-height:unset;">
+
+                <div id="leafletMap" class="leaflet-map-container" style="height:100%;min-height:unset;"></div>
+
+                <!-- Fallback mode if CDN fails -->
+                <div id="mapFallback" class="map-fallback hidden">
+                    <div class="grid-overlay"></div>
+                    <div class="fallback-message">Interactive Map Fallback Mode Active</div>
                 </div>
-                <div class="dashboard-global-controls">
-                    <button class="cta-secondary text-sm" id="btnResetAll">Reset Investigation</button>
-                    <button class="cta-primary text-sm ml-2" id="btnExportTop">Export Dossier</button>
+
+                <!-- Map Top Controls Bar: Quick Actions + North Indicator + Metocean Vectors -->
+                <div class="map-top-bar">
+                    <div class="map-quick-actions">
+                        <div class="map-compass" title="True North Indicator">
+                            <svg viewBox="0 0 24 24" width="16" height="16">
+                                <polygon points="12,2 16,12 12,9" fill="#f97316"/>
+                                <polygon points="12,2 8,12 12,9" fill="#ea580c"/>
+                                <polygon points="12,22 16,12 12,9" fill="#475569"/>
+                                <polygon points="12,22 8,12 12,9" fill="#334155"/>
+                                <text x="12" y="7" font-size="5" font-weight="bold" fill="#fff" text-anchor="middle">N</text>
+                            </svg>
+                        </div>
+                        <button class="map-btn" id="mapResetBtn">Reset View</button>
+                        <button class="map-btn" id="mapFitBoundsBtn">Fit Layers</button>
+                        <button class="map-btn" id="mapCenterSpillBtn" title="Center view on oil slick">Focus Slick</button>
+                    </div>
+
+                    <!-- Metocean Surface Drift Vector HUD -->
+                    <div class="map-metocean-hud" id="mapMetoceanHud" title="Live Metocean Drift Forcing Vectors">
+                        <div class="metocean-badge" id="hudWindBadge">
+                            <span class="metocean-icon" id="hudWindArrow">↑</span>
+                            <span class="metocean-label">WIND</span>
+                            <span class="metocean-val mono" id="hudWindVal">045° 12kt</span>
+                        </div>
+                        <div class="metocean-badge" id="hudCurrentBadge">
+                            <span class="metocean-icon" id="hudCurrentArrow">↑</span>
+                            <span class="metocean-label">CURRENT</span>
+                            <span class="metocean-val mono" id="hudCurrentVal">030° 0.8m/s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Layers Menu (Preserved) -->
+                <div class="map-layer-menu" id="mapLayerMenu">
+                    <div class="layer-menu-header">
+                        <span class="layer-menu-title">Map Layers</span>
+                        <span class="layer-badge mono">7 Active</span>
+                    </div>
+                    <label><input type="checkbox" id="layerSpill" checked> <span class="layer-dot dot-slick"></span> Oil Slick</label>
+                    <label><input type="checkbox" id="layerOrigin" checked> <span class="layer-dot dot-origin"></span> Origin Zone</label>
+                    <label><input type="checkbox" id="layerBackDrift" checked> <span class="layer-dot dot-backdrift"></span> Back-Drift</label>
+                    <label><input type="checkbox" id="layerForwardDrift" checked> <span class="layer-dot dot-forecast"></span> Forecast</label>
+                    <label><input type="checkbox" id="layerCone" checked> <span class="layer-dot dot-cone"></span> Uncertainty Cone</label>
+                    <label><input type="checkbox" id="layerVesselTracks" checked> <span class="layer-dot dot-track"></span> Vessel Tracks</label>
+                    <label><input type="checkbox" id="layerVessels" checked> <span class="layer-dot dot-vessel"></span> Candidate Vessels</label>
+                </div>
+
+                <!-- Collapsible Marine Investigation Legend -->
+                <div class="map-legend-card" id="mapLegendCard">
+                    <button class="legend-toggle-btn" id="legendToggleBtn" aria-expanded="false" title="Toggle Map Legend">
+                        <span class="legend-icon">🗺️</span>
+                        <span class="legend-title">Legend</span>
+                        <span class="legend-chevron" id="legendChevron">▾</span>
+                    </button>
+                    <div class="legend-content hidden" id="legendBody">
+                        <div class="legend-grid">
+                            <div class="legend-item"><span class="legend-swatch swatch-slick-core"></span><span>Detected Slick (SAR)</span></div>
+                            <div class="legend-item"><span class="legend-swatch swatch-slick-sheen"></span><span>Low Confidence Sheen</span></div>
+                            <div class="legend-item"><span class="legend-swatch swatch-origin"></span><span>Est. Origin Zone (90% CI)</span></div>
+                            <div class="legend-item"><span class="legend-swatch swatch-backdrift"></span><span>Back-Drift (Past T-)</span></div>
+                            <div class="legend-item"><span class="legend-swatch swatch-forecast"></span><span>Drift Forecast (Future T+)</span></div>
+                            <div class="legend-item"><span class="legend-swatch swatch-cone"></span><span>Dispersion Uncertainty</span></div>
+                            <div class="legend-item"><span class="legend-swatch swatch-candidate"></span><span>Candidate Vessel (#1)</span></div>
+                            <div class="legend-item"><span class="legend-swatch swatch-aisgap"></span><span>AIS Signal Gap / Target</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Coordinate & Sensor HUD Bar -->
+                <div class="map-status-hud" id="mapStatusHud">
+                    <div class="hud-coords mono" id="hudCoordsDisplay">
+                        <span class="hud-tag">LOC</span>
+                        <span id="hudLatLonVal">19.0760°N, 72.8777°E</span>
+                    </div>
+                    <div class="hud-feeds mono">
+                        <span class="hud-dot live"></span>
+                        <span>SENTINEL-1 SAR • ERA5 • CMEMS • AIS TELEMETRY</span>
+                    </div>
+                </div>
+
+                <!-- Spill Timeline Kinematic Scrubber (Preserved — docked to map bottom) -->
+                <div class="time-scrubber-container cc-scrubber-slim" id="timeScrubberPanel">
+                    <div class="scrubber-header">
+                        <div class="scrubber-title-group">
+                            <span class="scrubber-title">Spill Timeline Kinematic Scrubber</span>
+                            <span class="scrubber-phase-badge" id="scrubberPhaseBadge">RECONSTRUCTION &amp; FORECAST</span>
+                        </div>
+                        <span class="scrubber-value mono" id="scrubberTimeDisplay">T - 0h (Detection)</span>
+                    </div>
+                    <input type="range" class="time-slider" id="timeSlider" min="-72" max="72" value="0" step="1">
+                    <div class="scrubber-labels">
+                        <span>T - 72h (Origin)</span>
+                        <span>T - 0h (Detection)</span>
+                        <span>T + 72h (Forecast)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ---- RIGHT: ANALYSIS SIDEBAR ---- -->
+        <div class="cc-sidebar" id="ccSidebar">
+
+            <!-- Sidebar header strip: title + global actions -->
+            <div class="cc-sidebar-header">
+                <div class="cc-sidebar-title">
+                    <span class="cc-sidebar-label">Incident Command</span>
+                    <div class="cc-sidebar-actions">
+                        <button class="cta-secondary cc-btn-sm" id="btnResetAll">↺ Reset</button>
+                        <button class="cta-primary cc-btn-sm" id="btnExportTop">Export</button>
+                    </div>
+                </div>
+
+                <!-- Compact coordinate input row -->
+                <div class="cc-input-compact">
+                    <div class="cc-coord-group">
+                        <label for="inputLat">Lat °N</label>
+                        <input type="number" id="inputLat" step="0.0001" value="19.0760" class="control-input cc-coord-input">
+                    </div>
+                    <div class="cc-coord-group">
+                        <label for="inputLon">Lon °E</label>
+                        <input type="number" id="inputLon" step="0.0001" value="72.8777" class="control-input cc-coord-input">
+                    </div>
+                    <button class="cta-primary cc-btn-sm" id="btnSetLocation">Set Investigation Area</button>
+                    <button class="cta-secondary cc-btn-sm" id="btnCenterMap">Use Map Center</button>
+                    <button class="btn-text text-teal cc-demo-link" id="loadDemoImgBtn">Load Sample SAR Image</button>
                 </div>
             </div>
 
+            <!-- ====== DETECTION PANEL (Always visible at top of sidebar) ====== -->
+            <!-- Wraps the original #detection panel content without replacing IDs -->
+            <div class="cc-sidebar-content">
 
-            <div class="analysis-input-bar">
-                <div class="input-group">
-                    <label for="inputLat">Latitude (&deg;N)</label>
-                    <input type="number" id="inputLat" step="0.0001" value="19.0760" class="control-input">
-                </div>
-                <div class="input-group">
-                    <label for="inputLon">Longitude (&deg;E)</label>
-                    <input type="number" id="inputLon" step="0.0001" value="72.8777" class="control-input">
-                </div>
-                <button class="cta-primary" id="btnSetLocation">Set Investigation Area</button>
-                <button class="cta-secondary" id="btnCenterMap">Use Map Center</button>
-                <div class="input-divider"></div>
-                <button class="btn-text text-teal" id="loadDemoImgBtn" style="color: var(--accent-teal); cursor: pointer; text-decoration: underline;">Load Sample SAR Image</button>
-            </div>
+                <!-- Upload + Run Detection (always shown) -->
+                <div class="cc-detect-zone panel" id="detection">
+                    <div class="panel-header cc-panel-header-sm">
+                        <h3>Satellite Spill Detection</h3>
+                        <span class="badge badge-demo">SAR / EO</span>
+                    </div>
+                    <div class="panel-content cc-panel-content-sm">
 
-            <div class="dashboard-layout mt-4">
-
-                <div class="dashboard-main">
-                    <div class="interactive-map-wrapper">
-
-                        <div id="leafletMap" class="leaflet-map-container"></div>
-
-                        <!-- Fallback mode if CDN fails -->
-                        <div id="mapFallback" class="map-fallback hidden">
-                            <div class="grid-overlay"></div>
-                            <div class="fallback-message">Interactive Map Fallback Mode Active</div>
+                        <div class="upload-zone" id="uploadZone">
+                            <div class="upload-icon">&#8681;</div>
+                            <p>Drag &amp; Drop satellite image</p>
+                            <p class="text-muted text-sm">SAR or Optical (JPEG, PNG, TIFF)</p>
+                            <input type="file" id="imageUpload" accept="image/*" hidden>
                         </div>
 
-                        <!-- Map Top Controls Bar: Quick Actions + North Indicator + Metocean Vectors -->
-                        <div class="map-top-bar">
-                            <div class="map-quick-actions">
-                                <div class="map-compass" title="True North Indicator">
-                                    <svg viewBox="0 0 24 24" width="16" height="16">
-                                        <polygon points="12,2 16,12 12,9" fill="#f97316"/>
-                                        <polygon points="12,2 8,12 12,9" fill="#ea580c"/>
-                                        <polygon points="12,22 16,12 12,9" fill="#475569"/>
-                                        <polygon points="12,22 8,12 12,9" fill="#334155"/>
-                                        <text x="12" y="7" font-size="5" font-weight="bold" fill="#fff" text-anchor="middle">N</text>
-                                    </svg>
-                                </div>
-                                <button class="map-btn" id="mapResetBtn">Reset View</button>
-                                <button class="map-btn" id="mapFitBoundsBtn">Fit Layers</button>
-                                <button class="map-btn" id="mapCenterSpillBtn" title="Center view on oil slick">Focus Slick</button>
-                            </div>
-
-                            <!-- Metocean Surface Drift Vector HUD -->
-                            <div class="map-metocean-hud" id="mapMetoceanHud" title="Live Metocean Drift Forcing Vectors">
-                                <div class="metocean-badge" id="hudWindBadge">
-                                    <span class="metocean-icon" id="hudWindArrow">↑</span>
-                                    <span class="metocean-label">WIND</span>
-                                    <span class="metocean-val mono" id="hudWindVal">045° 12kt</span>
-                                </div>
-                                <div class="metocean-badge" id="hudCurrentBadge">
-                                    <span class="metocean-icon" id="hudCurrentArrow">↑</span>
-                                    <span class="metocean-label">CURRENT</span>
-                                    <span class="metocean-val mono" id="hudCurrentVal">030° 0.8m/s</span>
-                                </div>
+                        <div class="preview-area hidden" id="previewArea">
+                            <img src="" id="imgPreview" alt="Satellite Preview">
+                            <div class="preview-meta">
+                                <span id="fileName">image.tiff</span>
+                                <button class="btn-text text-danger" id="removeImgBtn">Remove</button>
                             </div>
                         </div>
 
-                        <!-- Map Layers Menu (Preserved) -->
-                        <div class="map-layer-menu" id="mapLayerMenu">
-                            <div class="layer-menu-header">
-                                <span class="layer-menu-title">Map Layers</span>
-                                <span class="layer-badge mono">7 Active</span>
-                            </div>
-                            <label><input type="checkbox" id="layerSpill" checked> <span class="layer-dot dot-slick"></span> Oil Slick</label>
-                            <label><input type="checkbox" id="layerOrigin" checked> <span class="layer-dot dot-origin"></span> Origin Zone</label>
-                            <label><input type="checkbox" id="layerBackDrift" checked> <span class="layer-dot dot-backdrift"></span> Back-Drift</label>
-                            <label><input type="checkbox" id="layerForwardDrift" checked> <span class="layer-dot dot-forecast"></span> Forecast</label>
-                            <label><input type="checkbox" id="layerCone" checked> <span class="layer-dot dot-cone"></span> Uncertainty Cone</label>
-                            <label><input type="checkbox" id="layerVesselTracks" checked> <span class="layer-dot dot-track"></span> Vessel Tracks</label>
-                            <label><input type="checkbox" id="layerVessels" checked> <span class="layer-dot dot-vessel"></span> Candidate Vessels</label>
-                        </div>
+                        <button class="cta-primary full-width cc-run-btn" id="runDetectionBtn" disabled>Run AI Detection</button>
 
-                        <!-- Collapsible Marine Investigation Legend -->
-                        <div class="map-legend-card" id="mapLegendCard">
-                            <button class="legend-toggle-btn" id="legendToggleBtn" aria-expanded="false" title="Toggle Map Legend">
-                                <span class="legend-icon">🗺️</span>
-                                <span class="legend-title">Legend</span>
-                                <span class="legend-chevron" id="legendChevron">▾</span>
+                        <!-- Pipeline — collapsible via JS accordion (new wrapper, IDs preserved inside) -->
+                        <div class="cc-pipeline-accordion hidden" id="processingPipelineAccordion">
+                            <button class="cc-pipeline-toggle" id="ccPipelineToggleBtn" aria-expanded="false">
+                                <span class="cc-pipeline-status-text" id="ccPipelineStatusText">Processing…</span>
+                                <span class="cc-pipeline-chevron">▾</span>
                             </button>
-                            <div class="legend-content hidden" id="legendBody">
-                                <div class="legend-grid">
-                                    <div class="legend-item">
-                                        <span class="legend-swatch swatch-slick-core"></span>
-                                        <span>Detected Slick (SAR)</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-swatch swatch-slick-sheen"></span>
-                                        <span>Low Confidence Sheen</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-swatch swatch-origin"></span>
-                                        <span>Est. Origin Zone (90% CI)</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-swatch swatch-backdrift"></span>
-                                        <span>Back-Drift (Past T-)</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-swatch swatch-forecast"></span>
-                                        <span>Drift Forecast (Future T+)</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-swatch swatch-cone"></span>
-                                        <span>Dispersion Uncertainty</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-swatch swatch-candidate"></span>
-                                        <span>Candidate Vessel (#1)</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-swatch swatch-aisgap"></span>
-                                        <span>AIS Signal Gap / Target</span>
-                                    </div>
+                            <div class="cc-pipeline-steps hidden" id="ccPipelineStepsBody">
+                                <div class="processing-pipeline" id="processingPipeline">
+                                    <div class="pipeline-step pending" id="step-upload">1. Validate Image Payload</div>
+                                    <div class="pipeline-step pending" id="step-detect">2. AI Segmentation Model</div>
+                                    <div class="pipeline-step pending" id="step-validate">3. Confidence &amp; Context</div>
+                                    <div class="pipeline-step pending" id="step-drift">4. Lagrangian Drift Model</div>
+                                    <div class="pipeline-step pending" id="step-ais">5. AIS Vessel Telemetry</div>
+                                    <div class="pipeline-step pending" id="step-evidence">6. Compile Evidence Dossier</div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Live Coordinate & Sensor HUD Bar -->
-                        <div class="map-status-hud" id="mapStatusHud">
-                            <div class="hud-coords mono" id="hudCoordsDisplay">
-                                <span class="hud-tag">LOC</span>
-                                <span id="hudLatLonVal">19.0760°N, 72.8777°E</span>
-                            </div>
-                            <div class="hud-feeds mono">
-                                <span class="hud-dot live"></span>
-                                <span>SENTINEL-1 SAR • ERA5 • CMEMS • AIS TELEMETRY</span>
-                            </div>
-                        </div>
-
-                        <!-- Spill Timeline Kinematic Scrubber (Preserved) -->
-                        <div class="time-scrubber-container" id="timeScrubberPanel">
-                            <div class="scrubber-header">
-                                <div class="scrubber-title-group">
-                                    <span class="scrubber-title">Spill Timeline Kinematic Scrubber</span>
-                                    <span class="scrubber-phase-badge" id="scrubberPhaseBadge">RECONSTRUCTION & FORECAST</span>
-                                </div>
-                                <span class="scrubber-value mono" id="scrubberTimeDisplay">T - 0h (Detection)</span>
-                            </div>
-                            <input type="range" class="time-slider" id="timeSlider" min="-72" max="72" value="0" step="1">
-                            <div class="scrubber-labels">
-                                <span>T - 72h (Origin)</span>
-                                <span>T - 0h (Detection)</span>
-                                <span>T + 72h (Forecast)</span>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
+                <!-- ======================================================= -->
+                <!-- RESULTS: only shown after analysis (hidable by JS)       -->
+                <!-- ======================================================= -->
+                <div class="cc-results-shell hidden" id="ccResultsShell">
 
-                <div class="dashboard-sidebar">
-
-
-                    <div class="panel" id="detection">
-                        <div class="panel-header">
-                            <h3>Satellite Spill Detection</h3>
-                            <span class="badge badge-demo">SAR / EO</span>
+                    <!-- Compact Summary Card -->
+                    <div class="cc-summary-card" id="detectionResults">
+                        <div class="cc-status-badge-row">
+                            <div class="status-badge status-warning cc-status-badge-compact" id="detStatusBadge">Potential Oil Spill Detected</div>
                         </div>
-                        <div class="panel-content">
-
-                            <div class="upload-zone" id="uploadZone">
-                                <div class="upload-icon">&#8681;</div>
-                                <p>Drag & Drop satellite image</p>
-                                <p class="text-muted text-sm">SAR or Optical (JPEG, PNG, TIFF)</p>
-                                <input type="file" id="imageUpload" accept="image/*" hidden>
+                        <!-- 2×2 stat grid — confidence is hero number -->
+                        <div class="cc-stat-grid">
+                            <div class="cc-stat-hero">
+                                <div class="cc-stat-hero-num mono text-warning" id="detConfidenceVal">87%</div>
+                                <div class="cc-stat-hero-label">Oil Confidence</div>
                             </div>
-
-
-                            <div class="preview-area hidden" id="previewArea">
-                                <img src="" id="imgPreview" alt="Satellite Preview">
-                                <div class="preview-meta">
-                                    <span id="fileName">image.tiff</span>
-                                    <button class="btn-text text-danger" id="removeImgBtn">Remove</button>
-                                </div>
+                            <div class="cc-stat-item">
+                                <div class="cc-stat-label">Sensor</div>
+                                <div class="cc-stat-val mono" id="detSensorVal">Sentinel-1 SAR</div>
                             </div>
-
-
-                            <button class="cta-primary full-width mt-4" id="runDetectionBtn" disabled>Run AI Detection</button>
-
-
-                            <div class="processing-pipeline hidden" id="processingPipeline">
-                                <div class="pipeline-step pending" id="step-upload">1. Validate Image Payload</div>
-                                <div class="pipeline-step pending" id="step-detect">2. AI Segmentation Model</div>
-                                <div class="pipeline-step pending" id="step-validate">3. Confidence & Context</div>
-                                <div class="pipeline-step pending" id="step-drift">4. Lagrangian Drift Model</div>
-                                <div class="pipeline-step pending" id="step-ais">5. AIS Vessel Telemetry</div>
-                                <div class="pipeline-step pending" id="step-evidence">6. Compile Evidence Dossier</div>
+                            <div class="cc-stat-item">
+                                <div class="cc-stat-label">Est. Area</div>
+                                <div class="cc-stat-val mono" id="detAreaVal">14.8 km²</div>
                             </div>
-
-
-                            <div class="detection-results mt-4 hidden" id="detectionResults">
-                                <div class="status-badge status-warning mb-4" id="detStatusBadge">Potential Oil Spill Detected</div>
-
-                                <div class="data-grid">
-                                    <div class="data-label">Oil Confidence</div>
-                                    <div class="data-value mono text-warning" id="detConfidenceVal">87%</div>
-                                    <div class="data-label">Sensor</div>
-                                    <div class="data-value mono" id="detSensorVal">Sentinel-1 SAR</div>
-                                    <div class="data-label">Est. Area</div>
-                                    <div class="data-value mono" id="detAreaVal">14.8 km&sup2;</div>
-                                    <div class="data-label">Centroid</div>
-                                    <div class="data-value mono" id="detCentroidVal">19.0812&deg;N, 72.8547&deg;E</div>
-                                    <div class="data-label">Est. Slick Age</div>
-                                    <div class="data-value mono" id="detAgeVal">18–30 hrs</div>
-                                </div>
-
-
-                                <div class="analysis-box mt-4">
-                                    <h4>Why do we think this is oil?</h4>
-                                    <ul class="analysis-list text-sm" id="oilReasonsList">
-                                        <li class="check">SAR dampening signature consistent with mineral oil</li>
-                                        <li class="check">Geometry & aspect ratio match release slick</li>
-                                        <li class="check">Wind speed (12 kts) supports persistent damping</li>
-                                        <li class="warn">Optical confirmation pending next Sentinel-2 pass</li>
-                                    </ul>
-                                </div>
-
-
-                                <div class="warning-box mt-4 hidden" id="lookAlikeWarning">
-                                    <strong>Possible Low-Wind Look-Alike</strong>
-                                    <p class="text-sm" id="lookAlikeText">Low wind conditions (< 5 kts) can produce dark non-oil features. Human verification required.</p>
-                                </div>
+                            <div class="cc-stat-item">
+                                <div class="cc-stat-label">Centroid</div>
+                                <div class="cc-stat-val mono text-xs" id="detCentroidVal">19.0812°N, 72.8547°E</div>
+                            </div>
+                            <div class="cc-stat-item">
+                                <div class="cc-stat-label">Slick Age</div>
+                                <div class="cc-stat-val mono" id="detAgeVal">18–30 hrs</div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Tab Bar — presentational only -->
+                    <div class="cc-tab-bar" id="ccTabBar" role="tablist">
+                        <button class="cc-tab-btn active" id="ccTabBtnEvidence" data-tab="evidence" role="tab" aria-selected="true">Evidence</button>
+                        <button class="cc-tab-btn" id="ccTabBtnDrift" data-tab="drift" role="tab" aria-selected="false">Drift</button>
+                        <button class="cc-tab-btn" id="ccTabBtnVessels" data-tab="vessels" role="tab" aria-selected="false">Vessels</button>
+                        <button class="cc-tab-btn" id="ccTabBtnWhatIf" data-tab="whatif" role="tab" aria-selected="false">What-If</button>
+                    </div>
 
-                    <div class="panel hidden" id="drift">
-                        <div class="panel-header">
-                            <h3>Drift Reconstruction</h3>
-                            <div class="toggle-switch">
-                                <button class="toggle-btn active" id="btnBackDrift">Back-Drift</button>
-                                <button class="toggle-btn" id="btnForwardDrift">Forecast</button>
-                            </div>
+                    <!-- ===== TAB: EVIDENCE ===== -->
+                    <div class="cc-tab-panel active" id="ccTabEvidence" data-panel="evidence" role="tabpanel">
+                        <div class="analysis-box">
+                            <h4>Why do we think this is oil?</h4>
+                            <ul class="analysis-list text-sm" id="oilReasonsList">
+                                <li class="check">SAR dampening signature consistent with mineral oil</li>
+                                <li class="check">Geometry &amp; aspect ratio match release slick</li>
+                                <li class="check">Wind speed (12 kts) supports persistent damping</li>
+                                <li class="warn">Optical confirmation pending next Sentinel-2 pass</li>
+                            </ul>
                         </div>
-                        <div class="panel-content">
 
-                            <div class="duration-control mb-4">
+                        <div class="warning-box mt-4 hidden" id="lookAlikeWarning">
+                            <strong>Possible Low-Wind Look-Alike</strong>
+                            <p class="text-sm" id="lookAlikeText">Low wind conditions (&lt; 5 kts) can produce dark non-oil features. Human verification required.</p>
+                        </div>
+                    </div>
+
+                    <!-- ===== TAB: DRIFT ===== -->
+                    <!-- Original #drift panel moved here; panel wrapper preserved for JS DOM.driftPanel -->
+                    <div class="cc-tab-panel" id="ccTabDrift" data-panel="drift" role="tabpanel">
+                        <div id="drift">
+                            <div class="cc-drift-header">
+                                <span class="cc-section-label">Drift Reconstruction</span>
+                                <div class="toggle-switch">
+                                    <button class="toggle-btn active" id="btnBackDrift">Back-Drift</button>
+                                    <button class="toggle-btn" id="btnForwardDrift">Forecast</button>
+                                </div>
+                            </div>
+
+                            <div class="duration-control mb-4 mt-2">
                                 <span class="text-xs text-muted">Forecast Horizon:</span>
                                 <div class="btn-group ml-2">
                                     <button class="btn-sm-toggle" data-hours="24">24h</button>
@@ -323,7 +335,6 @@
                                     <button class="btn-sm-toggle" data-hours="72">72h</button>
                                 </div>
                             </div>
-
 
                             <div class="environmental-controls">
                                 <div class="slider-group mb-2">
@@ -367,111 +378,112 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
+                    <!-- ===== TAB: VESSELS ===== -->
+                    <!-- Original #vessels panel moved here; outer div id preserved -->
+                    <div class="cc-tab-panel" id="ccTabVessels" data-panel="vessels" role="tabpanel">
+                        <div class="vessel-investigation" id="vessels">
 
-            <div class="vessel-investigation mt-6 hidden" id="vessels">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>AIS Vessel Correlation & Source Attribution</h3>
-                        <span class="badge badge-demo">Simulated Telemetry Data</span>
-                    </div>
-
-                    <div class="vessel-layout">
-
-                        <div class="vessel-table-wrapper">
-                            <div class="table-controls">
-                                <span class="text-sm">Source Type Filter: </span>
-                                <select class="filter-select" id="sourceTypeFilter">
-                                    <option value="all">All Candidate Sources</option>
-                                    <option value="vessel">Vessels Only</option>
-                                    <option value="infrastructure">Infrastructure / Platforms</option>
-                                    <option value="uncertain">Uncertain / Unidentified</option>
-                                </select>
+                            <!-- Table controls + table -->
+                            <div class="vessel-table-wrapper">
+                                <div class="table-controls">
+                                    <span class="text-sm">Source Filter: </span>
+                                    <select class="filter-select" id="sourceTypeFilter">
+                                        <option value="all">All Candidate Sources</option>
+                                        <option value="vessel">Vessels Only</option>
+                                        <option value="infrastructure">Infrastructure / Platforms</option>
+                                        <option value="uncertain">Uncertain / Unidentified</option>
+                                    </select>
+                                </div>
+                                <div class="cc-table-scroll">
+                                    <table class="vessel-table" id="vesselTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Rank</th>
+                                                <th>Candidate Target</th>
+                                                <th>MMSI</th>
+                                                <th>SOG / COG</th>
+                                                <th>Dist to Origin</th>
+                                                <th>Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- Show all toggle — hidden until >5 rows -->
+                                <button class="cc-show-all-btn hidden" id="ccShowAllVesselsBtn">Show all vessels ▾</button>
                             </div>
-                            <table class="vessel-table" id="vesselTable">
-                                <thead>
-                                    <tr>
-                                        <th>Rank</th>
-                                        <th>Candidate Target</th>
-                                        <th>MMSI</th>
-                                        <th>SOG / COG</th>
-                                        <th>Dist to Origin</th>
-                                        <th>Investigation Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
 
-                                </tbody>
-                            </table>
-
-
-                            <div class="what-if-box mt-4">
-                                <h4>What-If Model Robustness Sensitivity Test</h4>
-                                <p class="text-sm text-muted mb-2">Modify origin uncertainty parameters to observe ranking stability.</p>
-                                <div class="slider-group">
-                                    <div class="flex-between">
-                                        <label>Origin Uncertainty Radius (km)</label>
-                                        <span class="mono text-teal" id="valRadius">8.5 km</span>
+                            <!-- Suspect detail: inline expand (not third column) -->
+                            <div class="cc-vessel-detail-inline" id="vesselDetailPanel">
+                                <div class="empty-state text-muted text-center" id="vesselDetailEmpty">
+                                    Select a candidate row to inspect telemetry.
+                                </div>
+                                <div class="detail-content hidden" id="vesselDetailContent">
+                                    <div class="cc-detail-header">
+                                        <h4 id="detVesselName">Candidate Vessel A</h4>
+                                        <div class="mono text-sm text-muted" id="detVesselMmsi">MMSI: 235001234 &bull; VESSEL</div>
                                     </div>
-                                    <input type="range" class="control-slider" id="radiusSlider" min="2" max="25" step="0.5" value="8.5">
-                                </div>
-                                <div class="slider-group mt-2">
-                                    <div class="flex-between">
-                                        <label>Origin Time Window Shift (hrs)</label>
-                                        <span class="mono text-teal" id="valTimeShift">0 hrs</span>
+
+                                    <h5>Supporting Evidence Factors</h5>
+                                    <ul class="analysis-list text-sm" id="detVesselSupporting">
+                                        <li class="check">Close proximity to estimated origin zone</li>
+                                        <li class="check">Present during release window</li>
+                                        <li class="check">Trajectory compatible with drift</li>
+                                    </ul>
+
+                                    <h5 class="mt-4">Factors Lowering Confidence</h5>
+                                    <ul class="analysis-list text-sm" id="detVesselLowering">
+                                        <li class="warn">Speed pattern anomaly detected prior to gap</li>
+                                    </ul>
+
+                                    <div class="ais-anomaly-box mt-4 hidden" id="detVesselAnomaly">
+                                        <strong>Potential AIS / Satellite Mismatch</strong>
+                                        <p class="text-sm">Satellite radar detected physical vessel shape at origin location, but AIS broadcast was missing during release window.</p>
                                     </div>
-                                    <input type="range" class="control-slider" id="timeShiftSlider" min="-12" max="12" step="1" value="0">
-                                </div>
-                                <div class="robustness-result mt-2 text-sm" id="robustnessResult">
-                                    Candidate A remains Top Ranked &rarr; <span class="text-success">High Model Robustness</span>
-                                </div>
-                            </div>
-                        </div>
 
-
-                        <div class="vessel-detail-wrapper" id="vesselDetailPanel">
-                            <div class="empty-state text-muted text-center" id="vesselDetailEmpty">
-                                Select a candidate vessel row to inspect telemetry & attribution factors.
-                            </div>
-
-                            <div class="detail-content hidden" id="vesselDetailContent">
-                                <h4 id="detVesselName">Candidate Vessel A</h4>
-                                <div class="mono text-sm text-muted mb-4" id="detVesselMmsi">MMSI: 235001234 &bull; Commercial Tanker</div>
-
-                                <h5>Supporting Evidence Factors</h5>
-                                <ul class="analysis-list text-sm" id="detVesselSupporting">
-                                    <li class="check">Close proximity to estimated origin zone</li>
-                                    <li class="check">Present during release window</li>
-                                    <li class="check">Trajectory compatible with drift</li>
-                                </ul>
-
-                                <h5 class="mt-4">Factors Lowering Confidence</h5>
-                                <ul class="analysis-list text-sm" id="detVesselLowering">
-                                    <li class="warn">Speed pattern anomaly detected prior to gap</li>
-                                </ul>
-
-
-                                <div class="ais-anomaly-box mt-4 hidden" id="detVesselAnomaly">
-                                    <strong>Potential AIS / Satellite Mismatch</strong>
-                                    <p class="text-sm">Satellite radar detected physical vessel shape at origin location, but AIS broadcast was missing during release window.</p>
-                                </div>
-
-                                <div class="score-breakdown mt-4">
-                                    <h5>Confidence Propagation Chain</h5>
-                                    <div class="propagation-chain text-sm mono" id="detVesselPropagation">
-                                        Detection (87%) &rarr; Drift Origin (75%) &rarr; AIS Match (88%) = Final Investigation Score: 82%
+                                    <div class="score-breakdown mt-4">
+                                        <h5>Confidence Propagation Chain</h5>
+                                        <div class="propagation-chain text-sm mono" id="detVesselPropagation">
+                                            Detection (87%) &rarr; Drift Origin (75%) &rarr; AIS Correlation (88%) = Final Score: 82%
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-        </div>
-    </section>
+                    <!-- ===== TAB: WHAT-IF ===== -->
+                    <div class="cc-tab-panel" id="ccTabWhatIf" data-panel="whatif" role="tabpanel">
+                        <div class="what-if-box">
+                            <h4>What-If Model Robustness Sensitivity Test</h4>
+                            <p class="text-sm text-muted mb-2">Modify origin uncertainty parameters to observe ranking stability.</p>
+                            <div class="slider-group">
+                                <div class="flex-between">
+                                    <label>Origin Uncertainty Radius (km)</label>
+                                    <span class="mono text-teal" id="valRadius">8.5 km</span>
+                                </div>
+                                <input type="range" class="control-slider" id="radiusSlider" min="2" max="25" step="0.5" value="8.5">
+                            </div>
+                            <div class="slider-group mt-2">
+                                <div class="flex-between">
+                                    <label>Origin Time Window Shift (hrs)</label>
+                                    <span class="mono text-teal" id="valTimeShift">0 hrs</span>
+                                </div>
+                                <input type="range" class="control-slider" id="timeShiftSlider" min="-12" max="12" step="1" value="0">
+                            </div>
+                            <div class="robustness-result mt-2 text-sm" id="robustnessResult">
+                                Candidate A remains Top Ranked &rarr; <span class="text-success">High Model Robustness</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /cc-results-shell -->
+            </div><!-- /cc-sidebar-content -->
+        </div><!-- /cc-sidebar -->
+
+    </div><!-- /cc-page-shell -->
 
 
     <footer class="footer">
@@ -479,7 +491,7 @@
             <div class="footer-grid">
                 <div class="footer-brand">
                     <h2 class="brand-name">OceanTrace</h2>
-                    <p>AI-Powered Marine Oil Spill Detection & Vessel Attribution Platform</p>
+                    <p>AI-Powered Marine Oil Spill Detection &amp; Vessel Attribution Platform</p>
                     <p class="org-name mt-2"><strong>Team OceanSentinel</strong></p>
                     <p class="mt-2 text-sm">Smart India Hackathon 2026 &bull; Problem Statement 26143</p>
                 </div>
@@ -493,7 +505,7 @@
 
             <div class="footer-bottom mt-6">
                 <div class="disclaimer">
-                    <strong>Legal & Operational Disclaimer:</strong> OceanTrace is a decision-support analytical interface. Candidate vessel attribution is probabilistic and must be corroborated by authoritative regulatory and physical evidence prior to enforcement or legal proceeding. Demonstration telemetry is simulated for evaluation purposes.
+                    <strong>Legal &amp; Operational Disclaimer:</strong> OceanTrace is a decision-support analytical interface. Candidate vessel attribution is probabilistic and must be corroborated by authoritative regulatory and physical evidence prior to enforcement or legal proceeding.
                 </div>
                 <p class="text-sm mt-4 text-muted">&copy; 2026 Team OceanSentinel. All rights reserved.</p>
             </div>
