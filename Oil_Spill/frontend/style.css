@@ -2442,6 +2442,14 @@ body.cc-body {
     height: 100vh;
 }
 
+/* Fix overlap of HUD/Legend behind the Scrubber */
+@media (min-width: 768px) {
+    body.cc-body .map-status-hud,
+    body.cc-body .map-legend-card {
+        bottom: 110px;
+    }
+}
+
 /* ---- Slim navbar for CC ---- */
 .cc-navbar .nav-container {
     padding: 6px var(--space-24);
