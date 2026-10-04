@@ -236,24 +236,14 @@ document?.addEventListener('DOMContentLoaded', async () => {
     initVesselAttribution();
     initEvidence();
     initMapControlsAndLegend();
-
-    // Populate active incident telemetry so side and bottom sections are never empty
-    if (appState.vessels.length === 0) {
-        generateVesselsAroundOrigin();
-    }
-    renderVesselsTable();
-    const currentSel = appState.vessels.find(v => v.id === appState.selectedVesselId) || appState.vessels[0];
-    if (currentSel) showVesselDetail(currentSel);
-    updateUIElements();
     updateMetoceanHudVectors();
-    renderEvidenceChain();
-    generateDossier();
 
     if (!appState.dbId) {
         generateNewInvestigationId().catch(e => console.warn('Background ID generation:', e));
     }
 
     if (appState.analysisComplete) {
+        // Restore complete analysis state on page reload
         if (DOM.runBtn) {
             DOM.runBtn.textContent = 'Re-Run AI Analysis';
             DOM.runBtn.disabled = false;
@@ -268,6 +258,17 @@ document?.addEventListener('DOMContentLoaded', async () => {
             step.classList.add('done');
             if (!step.textContent.includes('✓')) step.textContent += ' ✓';
         });
+
+        DOM.results?.classList.remove('hidden');
+        DOM.driftPanel?.classList.remove('hidden');
+        DOM.vesselsPanel?.classList.remove('hidden');
+
+        if (appState.vessels.length === 0) {
+            generateVesselsAroundOrigin();
+        }
+        renderVesselsTable();
+        const currentSel = appState.vessels.find(v => v.id === appState.selectedVesselId) || appState.vessels[0];
+        if (currentSel) showVesselDetail(currentSel);
 
         setTimeout(() => {
             renderMapLayers();
