@@ -11,8 +11,10 @@ async function runFullPipeline(lat, lon, env, imagePath) {
     // Dynamically import @gradio/client since it's an ES Module
     const { Client } = await import('@gradio/client');
     
-    // Connect tightly to the Gradio Space
-    const app = await Client.connect(HF_SPACE);
+    // Connect tightly to the Gradio Space with authentication
+    const app = await Client.connect(HF_SPACE, {
+      hf_token: process.env.HF_TOKEN
+    });
     
     // Issue the prediction to the exact endpoint Hugging Face exposed
     const result = await app.predict("/run_pipeline", [

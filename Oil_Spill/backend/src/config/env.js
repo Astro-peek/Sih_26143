@@ -9,5 +9,6 @@ module.exports = {
   SUPABASE_STORAGE_BUCKET_SCENES: process.env.SUPABASE_STORAGE_BUCKET_SCENES || 'satellite-scenes',
   SUPABASE_STORAGE_BUCKET_DOSSIERS: process.env.SUPABASE_STORAGE_BUCKET_DOSSIERS || 'dossiers',
   CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  HF_TOKEN: process.env.HF_TOKEN
 };
